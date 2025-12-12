@@ -1,0 +1,31 @@
+# Environment
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Auth
+credentials.json
+token.pickle
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+data/real_*.csv
