@@ -37,9 +37,25 @@ class Database:
                 )
             except Exception as e:
                 st.error(f"⚠️ Error reading 'gcp_service_account' from secrets: {str(e)}")
+
+        # 2. Try OAuth Refresh Token from Streamlit Secrets (Alternative for Personal Accounts)
+        if not creds and "gcp_oauth" in st.secrets:
+            try:
+                oauth_info = st.secrets["gcp_oauth"]
+                creds = Credentials(
+                    token=oauth_info.get("token"),
+                    refresh_token=oauth_info.get("refresh_token"),
+                    token_uri=oauth_info.get("token_uri"),
+                    client_id=oauth_info.get("client_id"),
+                    client_secret=oauth_info.get("client_secret"),
+                    scopes=SCOPES
+                )
+            except Exception as e:
+                 st.error(f"⚠️ Error reading 'gcp_oauth' from secrets: {str(e)}")
         
-        # 2. Try Local OAuth (Best for Local Development)
+        # 3. Try Local OAuth (Best for Local Development)
         if not creds:
+             # ... (Rest of existing local code) ...
             if os.path.exists('token.pickle'):
                 with open('token.pickle', 'rb') as token:
                     creds = pickle.load(token)
