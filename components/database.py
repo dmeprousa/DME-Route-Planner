@@ -25,12 +25,18 @@ class Database:
         # 1. Try Service Account from Streamlit Secrets (Best for Cloud)
         if "gcp_service_account" in st.secrets:
             try:
-                service_account_info = st.secrets["gcp_service_account"]
+                # Check if it's a dict or a string (sometimes people paste JSON as string)
+                if isinstance(st.secrets["gcp_service_account"], str):
+                    import json
+                    service_account_info = json.loads(st.secrets["gcp_service_account"])
+                else:
+                    service_account_info = st.secrets["gcp_service_account"]
+                
                 creds = service_account.Credentials.from_service_account_info(
                     service_account_info, scopes=SCOPES
                 )
             except Exception as e:
-                print(f"Error loading secrets: {e}")
+                st.error(f"⚠️ Error reading 'gcp_service_account' from secrets: {str(e)}")
         
         # 2. Try Local OAuth (Best for Local Development)
         if not creds:

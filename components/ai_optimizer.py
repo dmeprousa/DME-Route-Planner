@@ -46,6 +46,23 @@ class AIOptimizer:
             return result
             
         except Exception as e:
+            # Fallback for Model Name Errors
+            if "404" in str(e) or "not found" in str(e).lower():
+                try:
+                    import streamlit as st
+                    st.warning("⚠️ Model 'gemini-2.5-flash' not found for optimization. Falling back to 'gemini-1.5-flash'...")
+                    fallback_model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = fallback_model.generate_content(prompt)
+                    
+                    result_text = response.text
+                    if '```json' in result_text:
+                        result_text = result_text.split('```json')[1].split('```')[0]
+                    elif '```' in result_text:
+                        result_text = result_text.split('```')[1].split('```')[0]
+                    return json.loads(result_text.strip())
+                except Exception as fb_error:
+                    raise Exception(f"Fallback optimization failed: {str(fb_error)}")
+                    
             raise Exception(f"AI optimization failed: {str(e)}")
     
     def _build_prompt(self, orders: List[Dict], drivers: List[Dict]) -> str:

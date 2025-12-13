@@ -63,6 +63,24 @@ Return ONLY the JSON array, no other text.
             return orders
             
         except Exception as e:
+            # Fallback for Model Name Errors (like 404 for gemini-2.5)
+            if "404" in str(e) or "not found" in str(e).lower():
+                try:
+                    import streamlit as st
+                    st.warning("⚠️ Model 'gemini-2.5-flash' not found. Falling back to 'gemini-1.5-flash'...")
+                    fallback_model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = fallback_model.generate_content(prompt)
+                    # Process fallback response
+                    result_text = response.text.strip()
+                    if '```json' in result_text:
+                         result_text = result_text.split('```json')[1].split('```')[0]
+                    elif '```' in result_text:
+                        result_text = result_text.split('```')[1].split('```')[0]
+                    import json
+                    return json.loads(result_text.strip())
+                except Exception as fallback_error:
+                    raise Exception(f"Fallback failed too: {str(fallback_error)}")
+            
             raise Exception(f"Failed to parse text: {str(e)}")
     
     def parse_file(self, uploaded_file) -> List[Dict]:
