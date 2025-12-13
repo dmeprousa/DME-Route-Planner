@@ -138,13 +138,7 @@ class Database:
             for i, order in enumerate(orders):
                 order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
                 
-                row = [
-                    order_id,
-                    date,
-                    datetime.now().isoformat(),
-                    order.get('status', 'pending'),
-                    order.get('order_type', ''),
-                    order.get('customer_name', ''),
+
                 # Clean items list for sheet readability
                 raw_items = order.get('items', '')
                 if isinstance(raw_items, list):
