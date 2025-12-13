@@ -145,11 +145,25 @@ class Database:
                     order.get('status', 'pending'),
                     order.get('order_type', ''),
                     order.get('customer_name', ''),
+                # Clean items list for sheet readability
+                raw_items = order.get('items', '')
+                if isinstance(raw_items, list):
+                    clean_items = " | ".join(raw_items)
+                else:
+                    clean_items = str(raw_items).replace(',', ' | ')
+
+                row = [
+                    order_id,
+                    date,
+                    datetime.now().isoformat(),
+                    order.get('status', 'pending'),
+                    order.get('order_type', ''),
+                    order.get('customer_name', ''),
                     order.get('customer_phone', ''),
                     order.get('address', ''),
                     order.get('city', ''),
                     order.get('zip_code', ''),
-                    order.get('items', ''),
+                    clean_items,
                     order.get('time_window_start', ''),
                     order.get('time_window_end', ''),
                     order.get('special_notes', ''),
@@ -208,3 +222,17 @@ class Database:
             
         except Exception as e:
             raise Exception(f"Error reading orders: {str(e)}")
+
+    def update_order_status(self, order_id: str, new_status: str) -> bool:
+        """Update the status of a specific order"""
+        try:
+            ws = self.spreadsheet.worksheet('ORDERS')
+            cell = ws.find(order_id)
+            if cell:
+                # Status is in column 4 (D) based on save_orders structure
+                # row, col. Update col 4
+                ws.update_cell(cell.row, 4, new_status)
+                return True
+            return False
+        except Exception as e:
+            raise Exception(f"Error updating status: {str(e)}")
