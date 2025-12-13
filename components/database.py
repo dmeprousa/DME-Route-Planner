@@ -16,30 +16,50 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 class Database:
     
     def __init__(self):
-        """Initialize Google Sheets with OAuth"""
+        """Initialize Google Sheets with OAuth or Service Account"""
+        import streamlit as st
+        from google.oauth2 import service_account
         
         creds = None
         
-        # Token file for stored credentials
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
+        # 1. Try Service Account from Streamlit Secrets (Best for Cloud)
+        if "gcp_service_account" in st.secrets:
+            try:
+                service_account_info = st.secrets["gcp_service_account"]
+                creds = service_account.Credentials.from_service_account_info(
+                    service_account_info, scopes=SCOPES
+                )
+            except Exception as e:
+                print(f"Error loading secrets: {e}")
         
-        # Authenticate if needed
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
+        # 2. Try Local OAuth (Best for Local Development)
+        if not creds:
+            if os.path.exists('token.pickle'):
+                with open('token.pickle', 'rb') as token:
+                    creds = pickle.load(token)
             
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(creds, token)
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                elif os.path.exists('credentials.json'):
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        'credentials.json', SCOPES)
+                    creds = flow.run_local_server(port=0)
+                    with open('token.pickle', 'wb') as token:
+                        pickle.dump(creds, token)
         
+        if not creds:
+            raise Exception("Could not authenticate. Check secrets or credentials.json")
+            
         # Authorize and open sheet
         self.client = gspread.authorize(creds)
-        sheet_id = os.getenv('GOOGLE_SHEET_ID', '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0')
+        
+        # Get Sheet ID from Secrets or Env
+        if "GOOGLE_SHEET_ID" in st.secrets:
+            sheet_id = st.secrets["GOOGLE_SHEET_ID"]
+        else:
+            sheet_id = os.getenv('GOOGLE_SHEET_ID', '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0')
+            
         self.spreadsheet = self.client.open_by_key(sheet_id)
     
     def get_drivers(self, status: str = 'active') -> List[Dict]:
