@@ -2,7 +2,7 @@
 streamlit>=1.30.0
 
 # AI
-google-generativeai==0.3.0
+google-generativeai>=0.8.0
 
 # Google Sheets with OAuth
 gspread==5.12.0
