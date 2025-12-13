@@ -157,8 +157,73 @@ with tab2:
                                 if selected_type != 'All':
                                     df = df[df['order_type'] == selected_type]
                         
-                        # Display table
-                        st.dataframe(df, use_container_width=True, height=400)
+                        # --- NEW: Actionable Status Update ---
+                        st.write("### 📝 Manage Status")
+                        st.info("Check orders below to mark them as **Delivered** and click 'Save Changes'.")
+                        
+                        # Prepare data for editor
+                        editable_df = df.copy()
+                        # Add a boolean column for the checkbox based on status text
+                        editable_df['is_delivered'] = editable_df['status'].str.lower() == 'delivered'
+                        
+                        # Use Data Editor
+                        edited_data = st.data_editor(
+                            editable_df,
+                            column_config={
+                                "is_delivered": st.column_config.CheckboxColumn(
+                                    "Mark Delivered?",
+                                    help="Check to mark as delivered",
+                                    default=False
+                                ),
+                                "status": st.column_config.TextColumn("Current Status", disabled=True),
+                                "order_id": st.column_config.TextColumn("ID", disabled=True),
+                                "customer_name": st.column_config.TextColumn("Customer", disabled=True),
+                                "address": st.column_config.TextColumn("Address", disabled=True),
+                            },
+                            disabled=["order_id", "status", "customer_name", "address", "city", "items"],
+                            hide_index=True,
+                            use_container_width=True,
+                            key="orders_editor"
+                        )
+                        
+                        # Save Button
+                        if st.button("💾 Save Status Changes", type="primary"):
+                            updated_count = 0
+                            progress_text = "Updating orders..."
+                            my_bar = st.progress(0, text=progress_text)
+                            
+                            try:
+                                db = Database()
+                                total_rows = len(edited_data)
+                                
+                                for index, row in edited_data.iterrows():
+                                    order_id = row['order_id']
+                                    new_checked = row['is_delivered']
+                                    original_status = row['status'].lower()
+                                    
+                                    # Logic: If checked and wasn't delivered -> Mark Delivered
+                                    if new_checked and original_status != 'delivered':
+                                        db.update_order_status(order_id, 'delivered')
+                                        updated_count += 1
+                                    
+                                    # Optional: If unchecked and was delivered -> Revert to pending?
+                                    elif not new_checked and original_status == 'delivered':
+                                        db.update_order_status(order_id, 'pending')
+                                        updated_count += 1
+                                        
+                                    my_bar.progress((index + 1) / total_rows)
+                                
+                                my_bar.empty()
+                                
+                                if updated_count > 0:
+                                    st.success(f"✅ Successfully updated {updated_count} orders!")
+                                    st.rerun()
+                                else:
+                                    st.info("No changes detected.")
+                                    
+                            except Exception as e:
+                                st.error(f"Error saving changes: {str(e)}")
+                        # -------------------------------------
                         
                         # Download CSV
                         csv = df.to_csv(index=False)
