@@ -34,3 +34,10 @@ data/real_*.csv
 # User Sessions
 app_state_*.json
 user_sessions.log
+
+# Helper and test scripts
+fix_passwords.py
+test_passwords.py
+generate_passwords.py
+password_test_result.txt
+correct_hashes.txt
