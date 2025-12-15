@@ -30,3 +30,7 @@ Thumbs.db
 
 # Data
 data/real_*.csv
+
+# User Sessions
+app_state_*.json
+user_sessions.log

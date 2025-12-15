@@ -5,9 +5,7 @@ DME Route Planner - Main Application
 import streamlit as st
 from datetime import date
 from components.session_manager import SessionManager
-
-# Load saved state (Auto-Recovery)
-SessionManager.load_state()
+from components.user_session import UserSession
 
 st.set_page_config(
     page_title="DME Route Planner",
@@ -15,6 +13,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Initialize user session
+UserSession.init_user()
+
+# Check if user is logged in
+if not UserSession.is_logged_in():
+    UserSession.select_user()
+    st.stop()
+
+# Load saved state for this user (Auto-Recovery)
+SessionManager.load_state()
 
 # Initialize session state
 if 'orders' not in st.session_state:
@@ -88,3 +97,7 @@ with st.sidebar:
         st.write(f"Orders: {len(st.session_state.orders)}")
         st.write(f"Drivers: {len(st.session_state.selected_drivers)}")
         st.write(f"Routes: {'Ready' if st.session_state.optimized_routes else 'Not ready'}")
+    
+    # Show user info and logout button
+    UserSession.show_user_info_sidebar()
+
