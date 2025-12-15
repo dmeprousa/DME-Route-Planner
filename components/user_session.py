@@ -41,7 +41,8 @@ class UserSession:
         }
         
         if username.lower() in DIRECT_PASSWORDS:
-            if password == DIRECT_PASSWORDS[username.lower()]:
+            # Check with strip() to ignore accidental spaces
+            if password.strip() == DIRECT_PASSWORDS[username.lower()]:
                 return True
 
         # 1. Generate hash of entered password
