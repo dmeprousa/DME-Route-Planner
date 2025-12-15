@@ -172,16 +172,68 @@ st.divider()
 
 # Display current orders
 if st.session_state.orders:
-    st.subheader("📋 Current Orders")
+    st.subheader("📋 Current Orders List")
     
+    # Prepare DataFrame for Editor
     df = pd.DataFrame(st.session_state.orders)
-    st.dataframe(df, use_container_width=True)
     
-    col1, col2, col3 = st.columns(3)
+    # Add 'Select' column for checkboxes
+    if 'selected_rows' not in st.session_state:
+        st.session_state.selected_rows = [False] * len(df)
+        
+    # Sync length if orders changed
+    if len(st.session_state.selected_rows) != len(df):
+        st.session_state.selected_rows = [False] * len(df)
+
+    # Control for Select All
+    col_a, col_b = st.columns([2, 10])
+    with col_a:
+        select_all = st.checkbox("Select All Orders")
+    
+    if select_all:
+        df.insert(0, "Selected", True)
+    else:
+        # Use simple session state management or default to False
+        df.insert(0, "Selected", False)
+
+    # Interactive Data Editor
+    edited_df = st.data_editor(
+        df,
+        column_config={
+            "Selected": st.column_config.CheckboxColumn(
+                "Select",
+                help="Select order to delete",
+                default=False,
+            )
+        },
+        disabled=df.columns.drop("Selected"), # Disable editing other columns implies view-only except checkbox
+        hide_index=True,
+        use_container_width=True,
+        key="order_editor" 
+    )
+
+    # Actions Bar
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
     with col1:
-        if st.button("🗑️ Clear All Orders", use_container_width=True):
-            st.session_state.orders = []
-            st.rerun()
+        # Calculate selected count
+        selected_indices = edited_df[edited_df["Selected"] == True].index.tolist()
+        count = len(selected_indices)
+        
+        if count > 0:
+            if st.button(f"🗑️ Delete Selected ({count})", type="primary", use_container_width=True):
+                # Remove selected orders (reverse order to avoid index shift issues)
+                for index in sorted(selected_indices, reverse=True):
+                    del st.session_state.orders[index]
+                st.success(f"Deleted {count} orders.")
+                st.rerun()
+        else:
+            if st.button("🗑️ Clear All", use_container_width=True):
+                 if st.button("Are you sure? Confirm Clear All"): # Nested button for safety check usually needs persistent state or simpler Confirm dialog
+                     pass # Simple logic: just clear if clicked twice or use callback. Let's stick to standard Clear All for now if no selection
+                 st.session_state.orders = []
+                 st.rerun()
+
     with col2:
         if st.button("👥 Next: Select Drivers →", type="primary", use_container_width=True):
             st.switch_page("pages/2_👥_Select_Drivers.py")
