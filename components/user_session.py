@@ -182,9 +182,12 @@ class UserSession:
                     </div>
                     """, unsafe_allow_html=True)
                 else:
-                    st.markdown("<h2 style='text-align: center; color: #E63946;'>🏥 DME PRO</h2>", unsafe_allow_html=True)
-
-                # Form Controls
+                    st.markdown("<h4 style='text-align: center; color: #555; font-weight: 400; margin-top: 5px; font-size: 1rem;'>Route Management System <span style='font-size: 0.8em; color: #999;'>(v2.0)</span></h4>", unsafe_allow_html=True)
+            
+            st.write("")
+            
+            # Login Form Container
+            with st.container():
                 user_options = {v['name']: k for k, v in USERS.items()}
                 selected_name = st.selectbox(
                     "Select Account",
@@ -227,24 +230,6 @@ class UserSession:
                             UserSession.log_failed_login(username)
 
     @staticmethod
-    def verify_password(username, password):
-        """Verify password with Hardcoded Fallback (Guaranteed to work)"""
-        # 1. Generate hash of entered password
-        entered_hash = UserSession.hash_password(password)
-        
-        # 2. Hardcoded Hashes (The Ultimate Fallback)
-        # Sofia: 123456Ss
-        # Cyrus: 123456Cc
-        # Admin: 1234567Hh
-        CORRECT_HASHES = {
-            'sofia': 'b231efc738cff097ab77e2a5d475dda69ac9e3ee0d97bebcf4b500406d8d8fa9ffcc', # 123456Ss
-            'cyrus': 'a41f28e1b8acc52ae6147822a59381ee6159cc0dc1884f4050f59bb7ba80c74a', # 123456Cc
-            'admin': '384d3a536fe70fdfaa5793e6b98a23ad4baaf83e11ee8f3ee18af5088eaebe87'  # 1234567Hh
-        }
-        
-        # 3. Check hardcoded first (Most reliable for immediate fix)
-        if username.lower() in CORRECT_HASHES:
-            if entered_hash == CORRECT_HASHES[username.lower()]:
                 return True
                 
         # 4. Fallback to secrets/.env if needed (Optional now)
