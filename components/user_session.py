@@ -96,77 +96,94 @@ class UserSession:
     
     @staticmethod
     def select_user():
-        """Show clean, professional login page with Logo"""
+        """Show clean, professional login page"""
         
-        # Clean CSS - Professional & Simple
-        st.markdown("""
+        # Helper to load image as base64 (Solves the fullscreen button issue permanently)
+        import base64
+        def get_image_base64(path):
+            try:
+                with open(path, "rb") as image_file:
+                    encoded = base64.b64encode(image_file.read()).decode()
+                return f"data:image/png;base64,{encoded}"
+            except:
+                return None
+
+        logo_base64 = get_image_base64("assets/dme_logo.png")
+        
+        # CSS - Professional, Centered, Clean
+        st.markdown(f"""
         <style>
-        .stApp {
+        .stApp {{
             background-color: #f8f9fa;
-        }
-        .main-container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 2rem;
+        }}
+        .main-wrapper {{
+            display: flex;
+            justify-content: center;
+            padding-top: 3rem;
+        }}
+        .login-card {{
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border: 1px solid #eee;
-        }
-        .stButton button {
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            border: 1px solid #eef0f2;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }}
+        .logo-img {{
+            width: 160px;
+            height: auto;
+            margin-bottom: 1rem;
+            pointer-events: none; /* Extra safety */
+        }}
+        .app-title {{
+            color: #2c3e50;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }}
+        .stButton button {{
             background-color: #E63946 !important;
             color: white !important;
             width: 100%;
+            border-radius: 8px !important;
+            height: 48px;
             font-weight: 600;
-            border-radius: 8px !important;
-            height: 45px;
-        }
-        .stButton button:hover {
+            margin-top: 1rem;
+            border: none;
+            box-shadow: 0 4px 6px rgba(230, 57, 70, 0.2);
+        }}
+        .stButton button:hover {{
             background-color: #d62839 !important;
-        }
-        .stTextInput input {
-            border-radius: 8px !important;
-        }
-        /* Custom image styling */
-        div[data-testid="stImage"] {
-            display: flex;
-            justify-content: center;
-        }
-        div[data-testid="stImage"] img {
-            width: 180px !important;  /* Fixed smaller width */
-            object-fit: contain;
-            pointer-events: none;     /* Disable click to expand */
-            user-select: none;
-        }
-        /* Hide fullscreen button just in case */
-        button[title="View fullscreen"] {
-            display: none !important;
-        }
+            box-shadow: 0 6px 12px rgba(230, 57, 70, 0.3);
+            transform: translateY(-1px);
+        }}
+        /* Hide fragments of Streamlit UI */
+        div[data-testid="stVerticalBlock"] > div {{
+            gap: 0.5rem;
+        }}
         </style>
         """, unsafe_allow_html=True)
         
-        # Spacer
-        st.write("")
-        st.write("")
-        
-        # Center the login box using columns
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # Layout columns to center the 'card' visually in Streamlit's grid
+        col1, col2, col3 = st.columns([1, 4, 1])
         
         with col2:
-            # Display Logo
-            import os
-            if os.path.exists("assets/dme_logo.png"):
-                # Width argument helps, but CSS above ensures the look and behavior
-                st.image("assets/dme_logo.png", width=180)
-            else:
-                st.markdown("<h1 style='text-align: center; color: #E63946; margin-bottom: 0;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
-            
-            st.markdown("<h4 style='text-align: center; color: #555; font-weight: 400; margin-top: 5px; font-size: 1rem;'>Route Management System</h4>", unsafe_allow_html=True)
-            
-            st.write("")
-            
-            # Login Form Container
+            # Container matching the CSS card style
             with st.container():
+                # Display Logo via HTML (No Fullscreen Button Guaranteed)
+                if logo_base64:
+                    st.markdown(f"""
+                    <div style="text-align: center;">
+                        <img src="{logo_base64}" class="logo-img" alt="DME Logo">
+                        <div class="app-title">Route Management System</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("<h2 style='text-align: center; color: #E63946;'>🏥 DME PRO</h2>", unsafe_allow_html=True)
+
+                # Form Controls
                 user_options = {v['name']: k for k, v in USERS.items()}
                 selected_name = st.selectbox(
                     "Select Account",
@@ -178,17 +195,22 @@ class UserSession:
                     username = user_options[selected_name]
                     user_info = USERS[username]
                     
-                    # Simple Role Label with Badge style
-                    st.markdown(f"<div style='background-color: #e9ecef; padding: 5px 10px; border-radius: 5px; color: #495057; font-size: 0.9em; margin-bottom: 10px; text-align: center;'>👤 <b>Role:</b> {user_info['role']}</div>", unsafe_allow_html=True)
+                    # Modern Badge for Role
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                            <span style="background-color: #f1f3f5; color: #495057; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
+                                👤 {user_info['role']}
+                            </span>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
                     
-                    # Password
-                    password = st.text_input("Password", type="password")
+                    # Password Input (No Hint!)
+                    password = st.text_input("Password", type="password", key="password_input")
                     
-                    # Hint for testing (can be removed later)
-                    if not password:
-                         st.caption(f"ℹ️ Hint: Default password is 123456" + user_info['name'][0] + user_info['name'][0].lower())
-
-                    # Login Button
+                    # Sign In Button
                     if st.button("Sign In", type="primary"):
                         if UserSession.verify_password(username, password):
                             st.session_state.current_user = username
@@ -196,7 +218,7 @@ class UserSession:
                             st.session_state.user_role = user_info['role']
                             st.session_state.login_attempts = 0
                             UserSession.log_session_start(username)
-                            st.success("Login Successful")
+                            st.success("Welcome back!")
                             st.rerun()
                         else:
                             st.session_state.login_attempts = st.session_state.get('login_attempts', 0) + 1
