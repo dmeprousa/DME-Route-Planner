@@ -14,9 +14,13 @@ from components.ai_optimizer import AIOptimizer
 from components.driver_manager import DriverManager
 from components.route_formatter import RouteFormatter
 from components.database import Database
+from components.user_session import UserSession
 import os
 
 st.set_page_config(page_title="Optimize Routes", page_icon="🤖", layout="wide")
+
+# Require authentication
+UserSession.require_auth()
 
 st.title("🤖 Optimize Routes")
 st.caption("AI-powered route optimization using Google Gemini")

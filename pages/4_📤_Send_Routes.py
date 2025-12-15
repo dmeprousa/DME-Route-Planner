@@ -13,8 +13,12 @@ from datetime import date
 from utils.whatsapp import create_whatsapp_url, format_route_message
 from utils.pdf_generator import generate_route_pdf
 from components.route_formatter import RouteFormatter
+from components.user_session import UserSession
 
 st.set_page_config(page_title="Send Routes", page_icon="📤", layout="wide")
+
+# Require authentication
+UserSession.require_auth()
 
 st.title("📤 Send Routes")
 st.caption("Send routes to drivers via WhatsApp or download as PDF")

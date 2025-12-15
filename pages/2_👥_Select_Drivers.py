@@ -12,8 +12,12 @@ import streamlit as st
 import pandas as pd
 from components.database import Database
 from components.session_manager import SessionManager
+from components.user_session import UserSession
 
 st.set_page_config(page_title="Select Drivers", page_icon="👥", layout="wide")
+
+# Require authentication
+UserSession.require_auth()
 
 st.title("👥 Select Drivers (Updated)")
 

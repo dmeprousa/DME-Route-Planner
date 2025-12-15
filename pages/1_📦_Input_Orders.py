@@ -11,10 +11,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import streamlit as st
 from datetime import date
 from components.order_input import OrderInput
+from components.user_session import UserSession
 from utils.validators import validate_order
 import pandas as pd
 
 st.set_page_config(page_title="Input Orders", page_icon="📦", layout="wide")
+
+# Require authentication
+UserSession.require_auth()
 
 st.title("📦 Input Orders")
 st.caption("Add delivery/pickup orders for today")

@@ -10,10 +10,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import streamlit as st
 from components.database import Database
+from components.user_session import UserSession
 import pandas as pd
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="History", page_icon="📊", layout="wide")
+
+# Require authentication
+UserSession.require_auth()
 
 st.title("📊 Route History")
 st.caption("View past routes and orders from Google Sheets")

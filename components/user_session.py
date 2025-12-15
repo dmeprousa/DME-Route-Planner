@@ -1,14 +1,19 @@
 """
 Simple User Management for DME Route Planner
 Allows multiple users to work with separate sessions
+Now includes password authentication for security
 """
 
 import streamlit as st
 import json
 import os
+import hashlib
 from datetime import datetime
+from dotenv import load_dotenv
 
-# Available users
+load_dotenv()
+
+# Available users (passwords are stored hashed in .env)
 USERS = {
     'sofia': {'name': 'Sofia', 'role': 'Dispatcher'},
     'cyrus': {'name': 'Cyrus', 'role': 'Manager'},
@@ -16,6 +21,23 @@ USERS = {
 }
 
 class UserSession:
+    
+    @staticmethod
+    def hash_password(password):
+        """Hash password using SHA256"""
+        return hashlib.sha256(password.encode()).hexdigest()
+    
+    @staticmethod
+    def verify_password(username, password):
+        """Verify password against stored hash"""
+        # Get hashed password from environment
+        stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
+        if not stored_hash:
+            return False
+        
+        # Hash the provided password and compare
+        password_hash = UserSession.hash_password(password)
+        return password_hash == stored_hash
     
     @staticmethod
     def get_state_file(username):
@@ -31,13 +53,13 @@ class UserSession:
             st.session_state.current_user = None
             st.session_state.user_name = None
             st.session_state.user_role = None
+            st.session_state.login_attempts = 0
     
     @staticmethod
     def select_user():
-        """Show user selection page"""
+        """Show user selection and password page"""
         
         st.title("🔐 DME Route Planner - Login")
-        st.write("Select your user to continue")
         
         col1, col2, col3 = st.columns([1, 2, 1])
         
@@ -48,9 +70,9 @@ class UserSession:
             # User selection dropdown
             user_options = {v['name']: k for k, v in USERS.items()}
             selected_name = st.selectbox(
-                "Who are you?",
+                "Select User",
                 options=[''] + list(user_options.keys()),
-                format_func=lambda x: "Select user..." if x == '' else x
+                format_func=lambda x: "Choose your name..." if x == '' else x
             )
             
             if selected_name and selected_name != '':
@@ -59,16 +81,41 @@ class UserSession:
                 
                 st.info(f"**Role:** {user_info['role']}")
                 
-                if st.button("Continue →", type="primary", use_container_width=True):
-                    # Set user in session
-                    st.session_state.current_user = username
-                    st.session_state.user_name = user_info['name']
-                    st.session_state.user_role = user_info['role']
-                    
-                    # Log session start
-                    UserSession.log_session_start(username)
-                    
-                    st.rerun()
+                # Password input
+                password = st.text_input(
+                    "Password",
+                    type="password",
+                    placeholder="Enter your password"
+                )
+                
+                col_btn1, col_btn2 = st.columns(2)
+                
+                with col_btn1:
+                    if st.button("🔓 Login", type="primary", use_container_width=True):
+                        if not password:
+                            st.error("Please enter your password")
+                        elif UserSession.verify_password(username, password):
+                            # Set user in session
+                            st.session_state.current_user = username
+                            st.session_state.user_name = user_info['name']
+                            st.session_state.user_role = user_info['role']
+                            st.session_state.login_attempts = 0
+                            
+                            # Log session start
+                            UserSession.log_session_start(username)
+                            
+                            st.success(f"Welcome back, {user_info['name']}! 👋")
+                            st.rerun()
+                        else:
+                            st.session_state.login_attempts += 1
+                            st.error(f"❌ Incorrect password! Attempt {st.session_state.login_attempts}")
+                            
+                            # Log failed attempt
+                            UserSession.log_failed_login(username)
+                
+                # Show login attempts warning
+                if st.session_state.get('login_attempts', 0) >= 3:
+                    st.warning("⚠️ Multiple failed attempts detected. Please contact admin if you forgot your password.")
         
         return False
     
@@ -78,7 +125,15 @@ class UserSession:
         log_file = "user_sessions.log"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(log_file, 'a') as f:
-            f.write(f"{timestamp} - {username} - SESSION_START\n")
+            f.write(f"{timestamp} - {username} - LOGIN_SUCCESS\n")
+    
+    @staticmethod
+    def log_failed_login(username):
+        """Log failed login attempt"""
+        log_file = "user_sessions.log"
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_file, 'a') as f:
+            f.write(f"{timestamp} - {username} - LOGIN_FAILED\n")
     
     @staticmethod
     def is_logged_in():
@@ -101,6 +156,7 @@ class UserSession:
             st.session_state.current_user = None
             st.session_state.user_name = None
             st.session_state.user_role = None
+            st.session_state.login_attempts = 0
             
             # Clear app data
             st.session_state.orders = []
@@ -113,7 +169,7 @@ class UserSession:
         log_file = "user_sessions.log"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(log_file, 'a') as f:
-            f.write(f"{timestamp} - {username} - SESSION_END\n")
+            f.write(f"{timestamp} - {username} - LOGOUT\n")
     
     @staticmethod
     def show_user_info_sidebar():
@@ -128,3 +184,18 @@ class UserSession:
                 if st.button("🚪 Logout", use_container_width=True):
                     UserSession.logout()
                     st.rerun()
+    
+    @staticmethod
+    def require_auth():
+        """Require authentication for a page - call this at the top of each page"""
+        UserSession.init_user()
+        
+        if not UserSession.is_logged_in():
+            st.error("🔒 This page requires authentication")
+            st.info("Please login from the home page to continue")
+            
+            if st.button("Go to Login Page"):
+                st.switch_page("app.py")
+            
+            st.stop()
+
