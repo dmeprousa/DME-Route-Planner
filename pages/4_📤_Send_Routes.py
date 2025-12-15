@@ -211,3 +211,6 @@ with st.sidebar:
     
     st.header("📞 Support")
     st.info("Questions?\nCall: 760-879-1071")
+
+# Show user info at the bottom of the sidebar
+UserSession.show_user_info_sidebar()

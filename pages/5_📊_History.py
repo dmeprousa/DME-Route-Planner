@@ -330,3 +330,6 @@ with st.sidebar:
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.session_state.auto_load_history = True
         st.rerun()
+
+# Show user info at the bottom of the sidebar
+UserSession.show_user_info_sidebar()

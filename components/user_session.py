@@ -348,34 +348,13 @@ class UserSession:
         """Show current user info in sidebar with consistent styling"""
         if UserSession.is_logged_in():
             with st.sidebar:
-                # Sticky Bottom CSS for User Info
-                st.markdown(
-                    """
-                    <style>
-                    /* Target the sidebar content wrapper */
-                    [data-testid="stSidebar"] > div:first-child {
-                        display: flex;
-                        flex-direction: column;
-                        height: 100vh;
-                    }
-                    /* Push footer to bottom */
-                    .sidebar-footer {
-                        margin-top: auto;
-                        padding-top: 20px;
-                        border-top: 1px solid #ddd;
-                        padding-bottom: 20px;
-                    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
+                # Add a divider to separate from previous content
+                st.divider()
                 
-                # Visual separation:
-                st.markdown("<div style='margin-top: auto;'></div>", unsafe_allow_html=True) # Spacer that flex might execute
-                st.divider() 
+                # User Info Card
                 st.markdown(
                     """
-                    <div style="background-color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div style="background-color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                         <div style="font-size: 0.8em; color: #888 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Current User</div>
                         <div style="font-size: 1.2em; font-weight: 700; color: #000 !important; margin-bottom: 2px;">""" + str(st.session_state.user_name) + """</div>
                         <div style="font-size: 0.9em; font-weight: 600; color: #E63946 !important;">""" + str(st.session_state.user_role) + """</div>
@@ -384,16 +363,19 @@ class UserSession:
                     unsafe_allow_html=True
                 )
                 
-                # Force Red Styling
+                # Force Red Styling for Logout Button
                 st.markdown("""
                 <style>
                 div[data-testid="stSidebar"] button[kind="primary"] {
                     background-color: #E63946 !important;
                     color: white !important;
                     border: none !important;
+                    transition: all 0.3s ease;
                 }
                 div[data-testid="stSidebar"] button[kind="primary"]:hover {
                     background-color: #d62839 !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(230, 57, 70, 0.3);
                 }
                 </style>
                 """, unsafe_allow_html=True)
@@ -416,6 +398,6 @@ class UserSession:
             
             st.stop()
         
-        # Automatically show user info in sidebar if logged in
-        UserSession.show_user_info_sidebar()
+        # NOTE: Sidebar info is now called manually at the end of each page 
+        # to ensure it appears BELOW other sidebar content like Tips.
 

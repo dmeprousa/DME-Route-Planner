@@ -137,3 +137,6 @@ with st.expander("➕ Add New Driver to Database"):
                     st.success(f"Added {name}! Refresh to see in list.")
                 except Exception as e:
                     st.error(str(e))
+
+# Show user info at the bottom of the sidebar
+UserSession.show_user_info_sidebar()

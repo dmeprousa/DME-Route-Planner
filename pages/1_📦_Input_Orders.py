@@ -259,3 +259,6 @@ with st.sidebar:
     - Required fields marked with *
     - Use 12-hour time format (AM/PM)
     """)
+
+# Show user info at the bottom of the sidebar
+UserSession.show_user_info_sidebar()

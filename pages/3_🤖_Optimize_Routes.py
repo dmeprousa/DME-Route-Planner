@@ -224,3 +224,6 @@ with st.sidebar:
     st.write(f"Orders: {len(st.session_state.orders)}")
     st.write(f"Drivers: {len(st.session_state.selected_drivers)}")
     st.write(f"Routes: {'Ready' if st.session_state.optimized_routes else 'Not ready'}")
+
+# Show user info at the bottom of the sidebar
+UserSession.show_user_info_sidebar()
