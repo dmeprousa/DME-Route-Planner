@@ -345,15 +345,37 @@ class UserSession:
     
     @staticmethod
     def show_user_info_sidebar():
-        """Show current user info in sidebar"""
+        """Show current user info in sidebar with consistent styling"""
         if UserSession.is_logged_in():
             with st.sidebar:
                 st.divider()
-                st.write("**👤 Current User**")
-                st.write(f"**Name:** {st.session_state.user_name}")
-                st.write(f"**Role:** {st.session_state.user_role}")
+                st.markdown(
+                    """
+                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 10px;">
+                        <div style="font-size: 0.85rem; color: #6c757d;">Current User</div>
+                        <div style="font-weight: 600; color: #2c3e50;">""" + str(st.session_state.user_name) + """</div>
+                        <div style="font-size: 0.8rem; color: #E63946;">""" + str(st.session_state.user_role) + """</div>
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
                 
-                if st.button("🚪 Logout", use_container_width=True):
+                # Force Red Styling for Sidebar Logout
+                st.markdown("""
+                <style>
+                div[data-testid="stSidebar"] button[kind="primary"] {
+                    background-color: #E63946 !important;
+                    color: white !important;
+                    border: none !important;
+                }
+                div[data-testid="stSidebar"] button[kind="primary"]:hover {
+                    background-color: #d62839 !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
+                # Logout Button with Primary Style (Red)
+                if st.button("🚪 Logout", type="primary", use_container_width=True, key="sidebar_logout_btn"):
                     UserSession.logout()
                     st.rerun()
     
@@ -370,4 +392,7 @@ class UserSession:
                 st.switch_page("app.py")
             
             st.stop()
+        
+        # Automatically show user info in sidebar if logged in
+        UserSession.show_user_info_sidebar()
 
