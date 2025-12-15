@@ -351,10 +351,10 @@ class UserSession:
                 st.divider()
                 st.markdown(
                     """
-                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 10px;">
-                        <div style="font-size: 0.85rem; color: #6c757d;">Current User</div>
-                        <div style="font-weight: 600; color: #2c3e50;">""" + str(st.session_state.user_name) + """</div>
-                        <div style="font-size: 0.8rem; color: #E63946;">""" + str(st.session_state.user_role) + """</div>
+                    <div style="background-color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.8em; color: #888 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Current User</div>
+                        <div style="font-size: 1.2em; font-weight: 700; color: #000 !important; margin-bottom: 2px;">""" + str(st.session_state.user_name) + """</div>
+                        <div style="font-size: 0.9em; font-weight: 600; color: #E63946 !important;">""" + str(st.session_state.user_role) + """</div>
                     </div>
                     """, 
                     unsafe_allow_html=True
