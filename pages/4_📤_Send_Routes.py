@@ -3,6 +3,11 @@ Page 4: Send Routes
 Send routes via WhatsApp and generate PDFs
 """
 
+import sys
+import os
+# Add project root to path for proper imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 from datetime import date
 from utils.whatsapp import create_whatsapp_url, format_route_message

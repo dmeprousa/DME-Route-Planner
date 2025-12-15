@@ -3,6 +3,11 @@ Page 1: Input Orders
 Parse orders from text, file upload, or manual entry
 """
 
+import sys
+import os
+# Add project root to path for proper imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 from datetime import date
 from components.order_input import OrderInput

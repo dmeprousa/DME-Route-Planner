@@ -3,6 +3,11 @@ Page 5: History
 View historical routes and orders
 """
 
+import sys
+import os
+# Add project root to path for proper imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 from components.database import Database
 import pandas as pd

@@ -4,6 +4,10 @@ DME Route Planner - Main Application
 
 import streamlit as st
 from datetime import date
+from components.session_manager import SessionManager
+
+# Load saved state (Auto-Recovery)
+SessionManager.load_state()
 
 st.set_page_config(
     page_title="DME Route Planner",

@@ -17,6 +17,7 @@ env/
 # Auth
 credentials.json
 token.pickle
+auth_setup.py
 
 # IDE
 .vscode/

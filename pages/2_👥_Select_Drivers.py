@@ -3,10 +3,15 @@ Page 2: Select Drivers (Updated)
 Simply select drivers from a dropdown and configure their start details. (Auto-Saves)
 """
 
+import sys
+import os
+# Add project root to path for proper imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 import pandas as pd
 from components.database import Database
-from utils.session_manager import SessionManager
+from components.session_manager import SessionManager
 
 st.set_page_config(page_title="Select Drivers", page_icon="👥", layout="wide")
 

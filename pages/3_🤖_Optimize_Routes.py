@@ -3,6 +3,11 @@ Page 3: Optimize Routes
 Use AI to optimize routes and assign orders to drivers
 """
 
+import sys
+import os
+# Add project root to path for proper imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 from datetime import date
 from components.ai_optimizer import AIOptimizer
