@@ -127,14 +127,20 @@ class UserSession:
         .stTextInput input {
             border-radius: 8px !important;
         }
+        /* Custom image styling */
         div[data-testid="stImage"] {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
+            display: flex;
+            justify-content: center;
         }
-        div[data-testid="stImage"] > img {
-            max-width: 200px; 
+        div[data-testid="stImage"] img {
+            width: 180px !important;  /* Fixed smaller width */
             object-fit: contain;
+            pointer-events: none;     /* Disable click to expand */
+            user-select: none;
+        }
+        /* Hide fullscreen button just in case */
+        button[title="View fullscreen"] {
+            display: none !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -150,11 +156,12 @@ class UserSession:
             # Display Logo
             import os
             if os.path.exists("assets/dme_logo.png"):
-                st.image("assets/dme_logo.png", use_container_width=True)
+                # Width argument helps, but CSS above ensures the look and behavior
+                st.image("assets/dme_logo.png", width=180)
             else:
                 st.markdown("<h1 style='text-align: center; color: #E63946; margin-bottom: 0;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color: #555; font-weight: 400; margin-top: 10px;'>Route Management System</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color: #555; font-weight: 400; margin-top: 5px; font-size: 1rem;'>Route Management System</h4>", unsafe_allow_html=True)
             
             st.write("")
             
