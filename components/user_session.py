@@ -211,11 +211,12 @@ class UserSession:
                         unsafe_allow_html=True
                     )
                     
-                    # Password Input (No Hint!)
+                    # Password Input
                     password = st.text_input("Password", type="password", key="password_input")
                     
                     # Sign In Button
                     if st.button("Sign In", type="primary"):
+                        # Use simple verify first
                         if UserSession.verify_password(username, password):
                             st.session_state.current_user = username
                             st.session_state.user_name = user_info['name']
@@ -230,27 +231,6 @@ class UserSession:
                             UserSession.log_failed_login(username)
 
     @staticmethod
-                return True
-                
-        # 4. Fallback to secrets/.env if needed (Optional now)
-        try:
-            import streamlit as st
-            import os
-            key = f'PASSWORD_{username.upper()}'
-            stored = None
-            
-            if hasattr(st, 'secrets'):
-                stored = st.secrets.get(key)
-            
-            if not stored:
-                from dotenv import load_dotenv
-                load_dotenv(override=True)
-                stored = os.getenv(key)
-                
-            if stored and entered_hash == stored:
-                return True
-        except:
-            pass
             
         return False
     
