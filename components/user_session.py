@@ -34,19 +34,30 @@ class UserSession:
         # Try to get password from Streamlit secrets first (for cloud deployment)
         # Then fallback to .env file (for local development)
         stored_hash = None
+        source = "NOT FOUND"
         
         try:
-            # Try Streamlit secrets first
+            # Try Streamlit secrets first (cloud deployment)
             import streamlit as st
-            if hasattr(st, 'secrets'):
-                stored_hash = st.secrets.get(f'PASSWORD_{username.upper()}')
-        except:
+            password_key = f'PASSWORD_{username.upper()}'
+            
+            # Check if running in Streamlit and secrets exist
+            if hasattr(st, 'secrets') and password_key in st.secrets:
+                stored_hash = st.secrets[password_key]
+                source = "Streamlit Secrets"
+        except Exception as e:
+            # If secrets don don't exist or error, continue to .env fallback
             pass
         
-        # If not found in secrets, try .env file
+        # If not found in secrets, try .env file (local development)
         if not stored_hash:
-            load_dotenv(override=True)
-            stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
+            try:
+                load_dotenv(override=True)
+                stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
+                if stored_hash:
+                    source = ".env file"
+            except:
+                pass
         
         # Debug: Print what we're comparing (only first/last 8 chars for security)
         password_hash = UserSession.hash_password(password)
@@ -63,7 +74,7 @@ class UserSession:
             st.write(f"- Generated hash: `{password_hash[:8]}...{password_hash[-8:]}`")
             st.write(f"- Stored hash: `{stored_hash[:8] if stored_hash else 'None'}...{stored_hash[-8:] if stored_hash else ''}`")
             st.write(f"- Hash length: {len(stored_hash) if stored_hash else 0} chars")
-            st.write(f"- Source: {'Streamlit Secrets' if stored_hash and not os.getenv(f'PASSWORD_{username.upper()}') else '.env file' if stored_hash else 'NOT FOUND'}")
+            st.write(f"- Source: {source}")
             st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH FOUND'}")
         
         if not stored_hash:
