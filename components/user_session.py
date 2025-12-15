@@ -87,23 +87,21 @@ class UserSession:
     
     @staticmethod
     def select_user():
-        """Show clean, professional login page"""
+        """Show clean, professional login page with Logo"""
         
         # Clean CSS - Professional & Simple
         st.markdown("""
         <style>
-        .login-header {
-            text-align: center;
-            padding: 2rem 0;
-            color: #2c3e50;
+        .stApp {
+            background-color: #f8f9fa;
         }
         .main-container {
             max-width: 400px;
             margin: 0 auto;
             padding: 2rem;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             border: 1px solid #eee;
         }
         .stButton button {
@@ -111,6 +109,23 @@ class UserSession:
             color: white !important;
             width: 100%;
             font-weight: 600;
+            border-radius: 8px !important;
+            height: 45px;
+        }
+        .stButton button:hover {
+            background-color: #d62839 !important;
+        }
+        .stTextInput input {
+            border-radius: 8px !important;
+        }
+        div[data-testid="stImage"] {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        div[data-testid="stImage"] > img {
+            max-width: 200px; 
+            object-fit: contain;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -123,44 +138,54 @@ class UserSession:
         col1, col2, col3 = st.columns([1, 1, 1])
         
         with col2:
-            # Simple Logo/Header
-            st.markdown("<h1 style='text-align: center; color: #E63946; margin-bottom: 0;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #7f8c8d; font-size: 0.9em; margin-top: 0;'>Route Management System</p>", unsafe_allow_html=True)
+            # Display Logo
+            import os
+            if os.path.exists("assets/dme_logo.png"):
+                st.image("assets/dme_logo.png", use_container_width=True)
+            else:
+                st.markdown("<h1 style='text-align: center; color: #E63946; margin-bottom: 0;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
             
-            st.write("---")
+            st.markdown("<h4 style='text-align: center; color: #555; font-weight: 400; margin-top: 10px;'>Route Management System</h4>", unsafe_allow_html=True)
             
-            # Login Form
-            user_options = {v['name']: k for k, v in USERS.items()}
-            selected_name = st.selectbox(
-                "Select Account",
-                options=[''] + list(user_options.keys()),
-                format_func=lambda x: "Select User..." if x == '' else x
-            )
+            st.write("")
             
-            if selected_name and selected_name != '':
-                username = user_options[selected_name]
-                user_info = USERS[username]
+            # Login Form Container
+            with st.container():
+                user_options = {v['name']: k for k, v in USERS.items()}
+                selected_name = st.selectbox(
+                    "Select Account",
+                    options=[''] + list(user_options.keys()),
+                    format_func=lambda x: "Select User..." if x == '' else x
+                )
                 
-                # Simple Role Label
-                st.caption(f"👤 Role: {user_info['role']}")
-                
-                # Password
-                password = st.text_input("Password", type="password")
-                
-                # Login Button
-                if st.button("Sign In", type="primary"):
-                    if UserSession.verify_password(username, password):
-                        st.session_state.current_user = username
-                        st.session_state.user_name = user_info['name']
-                        st.session_state.user_role = user_info['role']
-                        st.session_state.login_attempts = 0
-                        UserSession.log_session_start(username)
-                        st.success("Login Successful")
-                        st.rerun()
-                    else:
-                        st.session_state.login_attempts = st.session_state.get('login_attempts', 0) + 1
-                        st.error("Incorrect password")
-                        UserSession.log_failed_login(username)
+                if selected_name and selected_name != '':
+                    username = user_options[selected_name]
+                    user_info = USERS[username]
+                    
+                    # Simple Role Label with Badge style
+                    st.markdown(f"<div style='background-color: #e9ecef; padding: 5px 10px; border-radius: 5px; color: #495057; font-size: 0.9em; margin-bottom: 10px; text-align: center;'>👤 <b>Role:</b> {user_info['role']}</div>", unsafe_allow_html=True)
+                    
+                    # Password
+                    password = st.text_input("Password", type="password")
+                    
+                    # Hint for testing (can be removed later)
+                    if not password:
+                         st.caption(f"ℹ️ Hint: Default password is 123456" + user_info['name'][0] + user_info['name'][0].lower())
+
+                    # Login Button
+                    if st.button("Sign In", type="primary"):
+                        if UserSession.verify_password(username, password):
+                            st.session_state.current_user = username
+                            st.session_state.user_name = user_info['name']
+                            st.session_state.user_role = user_info['role']
+                            st.session_state.login_attempts = 0
+                            UserSession.log_session_start(username)
+                            st.success("Login Successful")
+                            st.rerun()
+                        else:
+                            st.session_state.login_attempts = st.session_state.get('login_attempts', 0) + 1
+                            st.error("Incorrect password")
+                            UserSession.log_failed_login(username)
 
     @staticmethod
     def verify_password(username, password):
