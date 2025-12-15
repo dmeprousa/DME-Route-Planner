@@ -11,7 +11,8 @@ import hashlib
 from datetime import datetime
 from dotenv import load_dotenv
 
-load_dotenv()
+# Force reload of environment variables (important for password updates)
+load_dotenv(override=True)
 
 # Available users (passwords are stored hashed in .env)
 USERS = {
@@ -30,6 +31,9 @@ class UserSession:
     @staticmethod
     def verify_password(username, password):
         """Verify password against stored hash"""
+        # Reload env to get latest password hashes (in case .env was updated)
+        load_dotenv(override=True)
+        
         # Get hashed password from environment
         stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
         if not stored_hash:
