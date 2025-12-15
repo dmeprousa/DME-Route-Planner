@@ -348,10 +348,34 @@ class UserSession:
         """Show current user info in sidebar with consistent styling"""
         if UserSession.is_logged_in():
             with st.sidebar:
-                st.divider()
+                # Sticky Bottom CSS for User Info
                 st.markdown(
                     """
-                    <div style="background-color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <style>
+                    /* Target the sidebar content wrapper */
+                    [data-testid="stSidebar"] > div:first-child {
+                        display: flex;
+                        flex-direction: column;
+                        height: 100vh;
+                    }
+                    /* Push footer to bottom */
+                    .sidebar-footer {
+                        margin-top: auto;
+                        padding-top: 20px;
+                        border-top: 1px solid #ddd;
+                        padding-bottom: 20px;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                # Visual separation:
+                st.markdown("<div style='margin-top: auto;'></div>", unsafe_allow_html=True) # Spacer that flex might execute
+                st.divider() 
+                st.markdown(
+                    """
+                    <div style="background-color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                         <div style="font-size: 0.8em; color: #888 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Current User</div>
                         <div style="font-size: 1.2em; font-weight: 700; color: #000 !important; margin-bottom: 2px;">""" + str(st.session_state.user_name) + """</div>
                         <div style="font-size: 0.9em; font-weight: 600; color: #E63946 !important;">""" + str(st.session_state.user_role) + """</div>
@@ -360,7 +384,7 @@ class UserSession:
                     unsafe_allow_html=True
                 )
                 
-                # Force Red Styling for Sidebar Logout
+                # Force Red Styling
                 st.markdown("""
                 <style>
                 div[data-testid="stSidebar"] button[kind="primary"] {
@@ -374,7 +398,6 @@ class UserSession:
                 </style>
                 """, unsafe_allow_html=True)
 
-                # Logout Button with Primary Style (Red)
                 if st.button("🚪 Logout", type="primary", use_container_width=True, key="sidebar_logout_btn"):
                     UserSession.logout()
                     st.rerun()
