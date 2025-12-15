@@ -36,18 +36,28 @@ class UserSession:
         stored_hash = None
         source = "NOT FOUND"
         
+        # Debug info about secrets
+        import streamlit as st
+        available_secrets = []
+        
         try:
             # Try Streamlit secrets first (cloud deployment)
-            import streamlit as st
             password_key = f'PASSWORD_{username.upper()}'
             
-            # Check if running in Streamlit and secrets exist
-            if hasattr(st, 'secrets') and password_key in st.secrets:
-                stored_hash = st.secrets[password_key]
-                source = "Streamlit Secrets"
+            # Check what secrets are available (for debugging)
+            if hasattr(st, 'secrets'):
+                try:
+                    available_secrets = list(st.secrets.keys())
+                except:
+                    available_secrets = ["Unable to list secrets"]
+                
+                # Check if our password key exists
+                if password_key in st.secrets:
+                    stored_hash = st.secrets[password_key]
+                    source = "Streamlit Secrets"
         except Exception as e:
-            # If secrets don don't exist or error, continue to .env fallback
-            pass
+            # If secrets don't exist or error, continue to .env fallback
+            available_secrets.append(f"Error: {str(e)}")
         
         # If not found in secrets, try .env file (local development)
         if not stored_hash:
@@ -63,18 +73,23 @@ class UserSession:
         password_hash = UserSession.hash_password(password)
         
         # Temporary debug output
-        import streamlit as st
         if 'debug_mode' not in st.session_state:
             st.session_state.debug_mode = True
             
         if st.session_state.debug_mode:
             st.write("🔍 **Debug Info:**")
             st.write(f"- Username: `{username}`")
+            st.write(f"- Looking for key: `PASSWORD_{username.upper()}`")
             st.write(f"- Password entered: `{'*' * len(password)}`")
             st.write(f"- Generated hash: `{password_hash[:8]}...{password_hash[-8:]}`")
             st.write(f"- Stored hash: `{stored_hash[:8] if stored_hash else 'None'}...{stored_hash[-8:] if stored_hash else ''}`")
             st.write(f"- Hash length: {len(stored_hash) if stored_hash else 0} chars")
             st.write(f"- Source: {source}")
+            
+            # Show available secrets (sensitive info hidden)
+            if available_secrets:
+                st.write(f"- **Available secret keys**: {', '.join([f'`{k}`' for k in available_secrets if not k.startswith('gcp_')])}")
+            
             st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH FOUND'}")
         
         if not stored_hash:
