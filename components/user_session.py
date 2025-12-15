@@ -31,11 +31,22 @@ class UserSession:
     @staticmethod
     def verify_password(username, password):
         """Verify password against stored hash"""
-        # Reload env to get latest password hashes (in case .env was updated)
-        load_dotenv(override=True)
+        # Try to get password from Streamlit secrets first (for cloud deployment)
+        # Then fallback to .env file (for local development)
+        stored_hash = None
         
-        # Get hashed password from environment
-        stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
+        try:
+            # Try Streamlit secrets first
+            import streamlit as st
+            if hasattr(st, 'secrets'):
+                stored_hash = st.secrets.get(f'PASSWORD_{username.upper()}')
+        except:
+            pass
+        
+        # If not found in secrets, try .env file
+        if not stored_hash:
+            load_dotenv(override=True)
+            stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
         
         # Debug: Print what we're comparing (only first/last 8 chars for security)
         password_hash = UserSession.hash_password(password)
@@ -52,7 +63,8 @@ class UserSession:
             st.write(f"- Generated hash: `{password_hash[:8]}...{password_hash[-8:]}`")
             st.write(f"- Stored hash: `{stored_hash[:8] if stored_hash else 'None'}...{stored_hash[-8:] if stored_hash else ''}`")
             st.write(f"- Hash length: {len(stored_hash) if stored_hash else 0} chars")
-            st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH IN ENV'}")
+            st.write(f"- Source: {'Streamlit Secrets' if stored_hash and not os.getenv(f'PASSWORD_{username.upper()}') else '.env file' if stored_hash else 'NOT FOUND'}")
+            st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH FOUND'}")
         
         if not stored_hash:
             return False
