@@ -30,36 +30,26 @@ class UserSession:
     
     @staticmethod
     def verify_password(username, password):
-        """Verify password against stored hash"""
-        # Try to get password from Streamlit secrets first (for cloud deployment)
-        # Then fallback to .env file (for local development)
+        """Verify password against stored hash - works with both secrets and env"""
         stored_hash = None
         source = "NOT FOUND"
         
-        # Debug info about secrets
-        import streamlit as st
-        available_secrets = []
+        # Hash the entered password
+        password_hash = UserSession.hash_password(password)
         
+        # Try multiple methods to get the password hash
+        # Method 1: Try Streamlit secrets
         try:
-            # Try Streamlit secrets first (cloud deployment)
+            import streamlit as st
+            # Direct access without checking
             password_key = f'PASSWORD_{username.upper()}'
-            
-            # Check what secrets are available (for debugging)
-            if hasattr(st, 'secrets'):
-                try:
-                    available_secrets = list(st.secrets.keys())
-                except:
-                    available_secrets = ["Unable to list secrets"]
-                
-                # Check if our password key exists
-                if password_key in st.secrets:
-                    stored_hash = st.secrets[password_key]
-                    source = "Streamlit Secrets"
+            stored_hash = st.secrets.get(password_key, None)
+            if stored_hash:
+                source = "Streamlit Secrets"
         except Exception as e:
-            # If secrets don't exist or error, continue to .env fallback
-            available_secrets.append(f"Error: {str(e)}")
+            pass
         
-        # If not found in secrets, try .env file (local development)
+        # Method 2: Try environment variables
         if not stored_hash:
             try:
                 load_dotenv(override=True)
@@ -69,33 +59,14 @@ class UserSession:
             except:
                 pass
         
-        # Debug: Print what we're comparing (only first/last 8 chars for security)
-        password_hash = UserSession.hash_password(password)
-        
-        # Temporary debug output
-        if 'debug_mode' not in st.session_state:
-            st.session_state.debug_mode = True
-            
-        if st.session_state.debug_mode:
-            st.write("🔍 **Debug Info:**")
-            st.write(f"- Username: `{username}`")
-            st.write(f"- Looking for key: `PASSWORD_{username.upper()}`")
-            st.write(f"- Password entered: `{'*' * len(password)}`")
-            st.write(f"- Generated hash: `{password_hash[:8]}...{password_hash[-8:]}`")
-            st.write(f"- Stored hash: `{stored_hash[:8] if stored_hash else 'None'}...{stored_hash[-8:] if stored_hash else ''}`")
-            st.write(f"- Hash length: {len(stored_hash) if stored_hash else 0} chars")
-            st.write(f"- Source: {source}")
-            
-            # Show available secrets (sensitive info hidden)
-            if available_secrets:
-                st.write(f"- **Available secret keys**: {', '.join([f'`{k}`' for k in available_secrets if not k.startswith('gcp_')])}")
-            
-            st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH FOUND'}")
-        
+        # If still not found, return False
         if not stored_hash:
+            # Only show debug in development
+            if os.getenv('DEBUG_MODE') == 'true':
+                st.error(f"Password hash not found for {username}")
             return False
         
-        # Hash the provided password and compare
+        # Compare hashes
         return password_hash == stored_hash
     
     @staticmethod
@@ -116,40 +87,150 @@ class UserSession:
     
     @staticmethod
     def select_user():
-        """Show user selection and password page with DME branding"""
+        """Show professional login page with modern DME branding"""
         
-        # Load Custom CSS if exists
-        import os
-        css_file = "assets/style.css"
-        if os.path.exists(css_file):
-            with open(css_file) as f:
-                st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+        # Inject modern CSS
+        st.markdown("""
+        <style>
+        /* Hide Streamlit branding */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
         
-        # Header with Logo
-        col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-        with col_logo2:
-            # Try to display logo
-            logo_path = "assets/dme_logo.png"
-            if os.path.exists(logo_path):
-                st.image(logo_path, use_container_width=True)
-            else:
-                st.markdown("<h1 style='text-align: center; color: #E63946;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center; color: #666; font-size: 0.9rem;'>THE AUTHORITY IN DURABLE MEDICAL SOLUTIONS</p>", unsafe_allow_html=True)
-            
-            st.markdown("<h2 style='text-align: center; color: #2D2D2D; margin-top: 2rem;'>Route Planner Login</h2>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #666; margin-bottom: 2rem;'>Access your route planning dashboard</p>", unsafe_allow_html=True)
+        /* Modern gradient background */
+        .stApp {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
         
-        # Login Form
-        col1, col2, col3 = st.columns([1, 2, 1])
+        /* Login container */
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 450px;
+            margin: 2rem auto;
+        }
+        
+        /* Headings */
+        h1 {
+            color: #1a202c !important;
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+            text-align: center;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        h2, h3 {
+            color: #4a5568 !important;
+            font-weight: 600 !important;
+            text-align: center;
+        }
+        
+        /* Input fields */
+        .stSelectbox, .stTextInput {
+            margin-bottom: 1.5rem;
+        }
+        
+        .stSelectbox label, .stTextInput label {
+            font-weight: 600 !important;
+            color: #2d3748 !important;
+            font-size: 0.95rem !important;
+        }
+        
+        input, select {
+            border-radius: 12px !important;
+            border: 2px solid #e2e8f0 !important;
+            padding: 0.875rem !important;
+            font-size: 1rem !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        input:focus, select:focus {
+            border-color: #E63946 !important;
+            box-shadow: 0 0 0 3px rgba(230,57,70,0.1) !important;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            background: linear-gradient(135deg, #E63946 0%, #C5303E 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 0.875rem 2rem !important;
+            font-weight: 700 !important;
+            font-size: 1.05rem !important;
+            width: 100% !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 14px rgba(230,57,70,0.4) !important;
+            margin-top: 1rem !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(230,57,70,0.5) !important;
+        }
+        
+        /* Role badge */
+        .role-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            margin: 1rem 0 1.5rem 0;
+            font-size: 0.95rem;
+        }
+        
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            color: #718096;
+            font-size: 0.875rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        /* Logo area */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        /* Error/Success messages */
+        .stAlert {
+            border-radius: 12px !important;
+            margin-top: 1rem !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Main container
+        col1, col2, col3 = st.columns([1, 3, 1])
         
         with col2:
-            # User selection dropdown
+            # Logo and header
+            st.markdown("""
+            <div class='logo-area'>
+                <h1>🏥 DME PRO</h1>
+                <p style='color: #718096; font-size: 0.95rem; margin-top: 0.5rem;'>
+                    The Authority in Durable Medical Solutions
+                </p>
+                <h3 style='margin-top: 2rem; color: #2d3748;'>Route Planner Login</h3>
+                <p style='color: #a0aec0; font-size: 0.9rem;'>
+                    Access your route management dashboard
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # User selection
             user_options = {v['name']: k for k, v in USERS.items()}
             selected_name = st.selectbox(
-                "Select User",
+                "Select Your Account",
                 options=[''] + list(user_options.keys()),
                 format_func=lambda x: "Choose your name..." if x == '' else x,
-                key="user_select"
+                key="user_select_main"
             )
             
             if selected_name and selected_name != '':
@@ -158,14 +239,8 @@ class UserSession:
                 
                 # Role badge
                 st.markdown(f"""
-                <div style='background: linear-gradient(135deg, #457B9D 0%, #1d3557 100%);
-                            color: white;
-                            padding: 0.75rem;
-                            border-radius: 10px;
-                            text-align: center;
-                            font-weight: 600;
-                            margin: 1rem 0;'>
-                    👤 Role: {user_info['role']}
+                <div class='role-badge'>
+                    👤 {user_info['role']}
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -173,45 +248,41 @@ class UserSession:
                 password = st.text_input(
                     "Password",
                     type="password",
-                    placeholder="Enter your password",
-                    key="password_input"
+                    placeholder="Enter your secure password",
+                    key="password_main"
                 )
                 
                 # Login button
-                if st.button("🔓 Login", type="primary", use_container_width=True, key="login_btn"):
+                if st.button("🔓 Sign In", key="login_main"):
                     if not password:
-                        st.error("Please enter your password")
+                        st.error("⚠️ Please enter your password")
                     elif UserSession.verify_password(username, password):
-                        # Set user in session
+                        # Successful login
                         st.session_state.current_user = username
                         st.session_state.user_name = user_info['name']
                         st.session_state.user_role = user_info['role']
                         st.session_state.login_attempts = 0
                         
-                        # Log session start
                         UserSession.log_session_start(username)
                         
-                        st.success(f"Welcome back, {user_info['name']}! 👋")
+                        st.success(f"✅ Welcome, {user_info['name']}!")
                         st.balloons()
                         st.rerun()
                     else:
-                        st.session_state.login_attempts += 1
-                        st.error(f"❌ Incorrect password! Attempt {st.session_state.login_attempts}")
-                        
-                        # Log failed attempt
+                        st.session_state.login_attempts = st.session_state.get('login_attempts', 0) + 1
+                        st.error(f"❌ Incorrect password (Attempt {st.session_state.login_attempts})")
                         UserSession.log_failed_login(username)
                 
-                # Show login attempts warning
+                # Warning for multiple attempts
                 if st.session_state.get('login_attempts', 0) >= 3:
-                    st.warning("⚠️ Multiple failed attempts detected. Please contact admin if you forgot your password.")
+                    st.warning("⚠️ Multiple failed attempts. Contact administrator if you forgot your password.")
             
             # Footer
-            st.markdown("<hr style='margin: 2rem 0; border-color: #E6394620;'>", unsafe_allow_html=True)
             st.markdown("""
-            <p style='text-align: center; color: #999; font-size: 0.85rem;'>
-                🔒 Secure Login • AI-Powered Route Optimization<br>
-                © 2025 DME Pro - All Rights Reserved
-            </p>
+            <div class='login-footer'>
+                🔒 Secure Authentication • AI-Powered Optimization<br>
+                <span style='color: #cbd5e0; font-size: 0.8rem;'>© 2025 DME Pro. All Rights Reserved.</span>
+            </div>
             """, unsafe_allow_html=True)
         
         return False
