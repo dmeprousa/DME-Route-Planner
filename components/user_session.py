@@ -36,11 +36,28 @@ class UserSession:
         
         # Get hashed password from environment
         stored_hash = os.getenv(f'PASSWORD_{username.upper()}')
+        
+        # Debug: Print what we're comparing (only first/last 8 chars for security)
+        password_hash = UserSession.hash_password(password)
+        
+        # Temporary debug output
+        import streamlit as st
+        if 'debug_mode' not in st.session_state:
+            st.session_state.debug_mode = True
+            
+        if st.session_state.debug_mode:
+            st.write("🔍 **Debug Info:**")
+            st.write(f"- Username: `{username}`")
+            st.write(f"- Password entered: `{'*' * len(password)}`")
+            st.write(f"- Generated hash: `{password_hash[:8]}...{password_hash[-8:]}`")
+            st.write(f"- Stored hash: `{stored_hash[:8] if stored_hash else 'None'}...{stored_hash[-8:] if stored_hash else ''}`")
+            st.write(f"- Hash length: {len(stored_hash) if stored_hash else 0} chars")
+            st.write(f"- Match: {password_hash == stored_hash if stored_hash else 'NO HASH IN ENV'}")
+        
         if not stored_hash:
             return False
         
         # Hash the provided password and compare
-        password_hash = UserSession.hash_password(password)
         return password_hash == stored_hash
     
     @staticmethod
