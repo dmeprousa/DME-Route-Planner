@@ -116,65 +116,103 @@ class UserSession:
     
     @staticmethod
     def select_user():
-        """Show user selection and password page"""
+        """Show user selection and password page with DME branding"""
         
-        st.title("🔐 DME Route Planner - Login")
+        # Load Custom CSS if exists
+        import os
+        css_file = "assets/style.css"
+        if os.path.exists(css_file):
+            with open(css_file) as f:
+                st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
         
+        # Header with Logo
+        col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+        with col_logo2:
+            # Try to display logo
+            logo_path = "assets/dme_logo.png"
+            if os.path.exists(logo_path):
+                st.image(logo_path, use_container_width=True)
+            else:
+                st.markdown("<h1 style='text-align: center; color: #E63946;'>🏥 DME PRO</h1>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; color: #666; font-size: 0.9rem;'>THE AUTHORITY IN DURABLE MEDICAL SOLUTIONS</p>", unsafe_allow_html=True)
+            
+            st.markdown("<h2 style='text-align: center; color: #2D2D2D; margin-top: 2rem;'>Route Planner Login</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #666; margin-bottom: 2rem;'>Access your route planning dashboard</p>", unsafe_allow_html=True)
+        
+        # Login Form
         col1, col2, col3 = st.columns([1, 2, 1])
         
         with col2:
-            st.write("")
-            st.write("")
-            
             # User selection dropdown
             user_options = {v['name']: k for k, v in USERS.items()}
             selected_name = st.selectbox(
                 "Select User",
                 options=[''] + list(user_options.keys()),
-                format_func=lambda x: "Choose your name..." if x == '' else x
+                format_func=lambda x: "Choose your name..." if x == '' else x,
+                key="user_select"
             )
             
             if selected_name and selected_name != '':
                 username = user_options[selected_name]
                 user_info = USERS[username]
                 
-                st.info(f"**Role:** {user_info['role']}")
+                # Role badge
+                st.markdown(f"""
+                <div style='background: linear-gradient(135deg, #457B9D 0%, #1d3557 100%);
+                            color: white;
+                            padding: 0.75rem;
+                            border-radius: 10px;
+                            text-align: center;
+                            font-weight: 600;
+                            margin: 1rem 0;'>
+                    👤 Role: {user_info['role']}
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Password input
                 password = st.text_input(
                     "Password",
                     type="password",
-                    placeholder="Enter your password"
+                    placeholder="Enter your password",
+                    key="password_input"
                 )
                 
-                col_btn1, col_btn2 = st.columns(2)
-                
-                with col_btn1:
-                    if st.button("🔓 Login", type="primary", use_container_width=True):
-                        if not password:
-                            st.error("Please enter your password")
-                        elif UserSession.verify_password(username, password):
-                            # Set user in session
-                            st.session_state.current_user = username
-                            st.session_state.user_name = user_info['name']
-                            st.session_state.user_role = user_info['role']
-                            st.session_state.login_attempts = 0
-                            
-                            # Log session start
-                            UserSession.log_session_start(username)
-                            
-                            st.success(f"Welcome back, {user_info['name']}! 👋")
-                            st.rerun()
-                        else:
-                            st.session_state.login_attempts += 1
-                            st.error(f"❌ Incorrect password! Attempt {st.session_state.login_attempts}")
-                            
-                            # Log failed attempt
-                            UserSession.log_failed_login(username)
+                # Login button
+                if st.button("🔓 Login", type="primary", use_container_width=True, key="login_btn"):
+                    if not password:
+                        st.error("Please enter your password")
+                    elif UserSession.verify_password(username, password):
+                        # Set user in session
+                        st.session_state.current_user = username
+                        st.session_state.user_name = user_info['name']
+                        st.session_state.user_role = user_info['role']
+                        st.session_state.login_attempts = 0
+                        
+                        # Log session start
+                        UserSession.log_session_start(username)
+                        
+                        st.success(f"Welcome back, {user_info['name']}! 👋")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.session_state.login_attempts += 1
+                        st.error(f"❌ Incorrect password! Attempt {st.session_state.login_attempts}")
+                        
+                        # Log failed attempt
+                        UserSession.log_failed_login(username)
                 
                 # Show login attempts warning
                 if st.session_state.get('login_attempts', 0) >= 3:
                     st.warning("⚠️ Multiple failed attempts detected. Please contact admin if you forgot your password.")
+            
+            # Footer
+            st.markdown("<hr style='margin: 2rem 0; border-color: #E6394620;'>", unsafe_allow_html=True)
+            st.markdown("""
+            <p style='text-align: center; color: #999; font-size: 0.85rem;'>
+                🔒 Secure Login • AI-Powered Route Optimization<br>
+                © 2025 DME Pro - All Rights Reserved
+            </p>
+            """, unsafe_allow_html=True)
         
         return False
     

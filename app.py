@@ -6,6 +6,7 @@ import streamlit as st
 from datetime import date
 from components.session_manager import SessionManager
 from components.user_session import UserSession
+import os
 
 st.set_page_config(
     page_title="DME Route Planner",
@@ -13,6 +14,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Load Custom CSS
+def load_css():
+    css_file = "assets/style.css"
+    if os.path.exists(css_file):
+        with open(css_file) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+load_css()
 
 # Initialize user session
 UserSession.init_user()
