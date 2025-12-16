@@ -376,7 +376,7 @@ if st.session_state.orders:
     df['status'] = df['status'].fillna('pending')
 
     # Ensure other essential columns exist to prevent display errors
-    essential_cols = ['customer', 'phone', 'time_window', 'notes', 'order_type', 'zip_code', 'city', 'items', 'address']
+    essential_cols = ['customer', 'phone', 'time_window', 'notes', 'order_type', 'zip_code', 'city', 'items', 'address', 'assigned_driver']
     for col in essential_cols:
         if col not in df.columns:
             df[col] = ""
@@ -424,7 +424,15 @@ if st.session_state.orders:
                 ],
                 required=True,
             )
-            ,
+            ),
+            # NEW: Assigned Driver Dropdown
+            "assigned_driver": st.column_config.SelectboxColumn(
+                "💂 Assigned Driver",
+                help="Driver assigned to this order",
+                width="medium",
+                options=["Unassigned"] + st.session_state.get('selected_drivers', []),
+                required=False
+            ),
             # Hide technical columns
             "username": None,
             "added_at": None,
@@ -435,7 +443,7 @@ if st.session_state.orders:
             "order_id": None
         },
         column_order=[
-            "Selected", "status", "order_type", 
+            "Selected", "status", "assigned_driver", "order_type", 
             "customer", "phone", "address", "city", "zip_code", 
             "items", "time_window", "notes"
         ],
@@ -452,7 +460,10 @@ if st.session_state.orders:
         if index < len(st.session_state.orders):
             if st.session_state.orders[index].get('status') != row['status']:
                 st.session_state.orders[index]['status'] = row['status']
-                # Trigger save to sheets if needed - kept local for speed now
+            
+            # Sync assigned driver manual changes
+            if st.session_state.orders[index].get('assigned_driver') != row['assigned_driver']:
+                 st.session_state.orders[index]['assigned_driver'] = row['assigned_driver']
 
     col1, col2, col3 = st.columns([1, 1, 1])
     

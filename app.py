@@ -107,12 +107,12 @@ if total_orders > 0:
         df_display = pd.DataFrame(st.session_state.orders)
         
         # Ensure columns exist to prevent KeyError
-        columns_to_show = ['customer', 'address', 'status', 'time_window']
+        columns_to_show = ['customer', 'assigned_driver', 'address', 'status', 'time_window']
         for col in columns_to_show:
             if col not in df_display.columns:
                 df_display[col] = "" # Fill missing columns
                 
-        # Show interactive table (Editable Status)
+        # Show interactive table (Editable Status & Driver)
         # We need to reverse the dataframe to show NEWEST first, not just tail
         df_reversed = df_display.iloc[::-1].head(10) # Last 10 reversed
         
@@ -123,9 +123,14 @@ if total_orders > 0:
                     "Status",
                     options=["pending", "delivered", "failed", "archived"],
                     required=True
+                ),
+                "assigned_driver": st.column_config.SelectboxColumn(
+                    "💂 Driver",
+                    options=["Unassigned"] + st.session_state.get('selected_drivers', []),
+                    required=False
                 )
             },
-            disabled=[c for c in columns_to_show if c != "status"],
+            disabled=["customer", "address", "time_window"],
             use_container_width=True,
             hide_index=True,
             key="dashboard_status_editor"
@@ -145,11 +150,17 @@ if total_orders > 0:
                  # Update the original order in session state
                  # idx is the original index from df_display which matches session_state.orders
                  if idx < len(st.session_state.orders):
+                     # Sync Status
                      if st.session_state.orders[idx].get('status') != row['status']:
                          st.session_state.orders[idx]['status'] = row['status']
-                         # Trigger auto-save immediately to prevent data loss
                          UserSession._auto_save_session()
-                         st.rerun() # Refresh to update metrics instantly
+                         st.rerun()
+                     
+                     # Sync Assigned Driver
+                     if st.session_state.orders[idx].get('assigned_driver') != row['assigned_driver']:
+                         st.session_state.orders[idx]['assigned_driver'] = row['assigned_driver']
+                         UserSession._auto_save_session()
+                         st.rerun()
 
     st.divider()
 

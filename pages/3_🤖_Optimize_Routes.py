@@ -120,6 +120,19 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
             
             st.success("✅ Routes optimized successfully!")
             
+            # UPDATE Assigned Driver in Session State automatically
+            for driver_name, orders in st.session_state.optimized_routes.items():
+                for route_order in orders:
+                    # Find matching order in session to update driver
+                    for session_order in st.session_state.orders:
+                        # Match by address (and customer if possible) to be safe
+                        if session_order.get('address') == route_order.get('address'):
+                            session_order['assigned_driver'] = driver_name
+                            
+            # Trigger session save
+            from components.user_session import UserSession
+            UserSession._auto_save_session()
+            
             # AUTO-SAVE to database to prevent data loss on refresh!
             try:
                 today = date.today().strftime('%Y-%m-%d')
