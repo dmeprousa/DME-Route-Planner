@@ -16,16 +16,42 @@ class SheetsManager:
     def __init__(self):
         """Initialize connection to Google Sheets"""
         try:
-            # Try StSheets Secrets first (for Streamlit Cloud)
-            if hasattr(st, 'secrets') and 'GOOGLE_SHEETS_CREDENTIALS' in st.secrets:
-                creds_dict = dict(st.secrets['GOOGLE_SHEETS_CREDENTIALS'])
-            else:
-                # Fall back to local credentials.json
+            creds_dict = None
+            
+            # Priority 1: Try Streamlit Secrets (for Cloud deployment)
+            try:
+                if hasattr(st, 'secrets') and 'GOOGLE_SHEETS_CREDENTIALS' in st.secrets:
+                    secret_value = st.secrets['GOOGLE_SHEETS_CREDENTIALS']
+                    
+                    # Handle both formats: dict (TOML table) or string (JSON)
+                    if isinstance(secret_value, dict):
+                        creds_dict = dict(secret_value)
+                    elif isinstance(secret_value, str):
+                        creds_dict = json.loads(secret_value)
+                    else:
+                        st.warning(f"Unexpected credentials format: {type(secret_value)}")
+                    
+                    # st.success("✅ Using Google Sheets credentials from Streamlit Secrets")
+            except Exception as e:
+                st.warning(f"Could not load from Streamlit Secrets: {str(e)}")
+            
+            # Priority 2: Try local credentials.json (for local development)
+            if not creds_dict:
                 creds_path = 'credentials.json'
-                if not os.path.exists(creds_path):
-                    raise FileNotFoundError("credentials.json not found")
-                with open(creds_path, 'r') as f:
-                    creds_dict = json.load(f)
+                if os.path.exists(creds_path):
+                    try:
+                        with open(creds_path, 'r') as f:
+                            creds_dict = json.load(f)
+                        # st.info("📁 Using credentials from local credentials.json")
+                    except Exception as e:
+                        st.warning(f"Could not read credentials.json: {str(e)}")
+            
+            # If no credentials found anywhere
+            if not creds_dict:
+                st.warning("⚠️ Google Sheets credentials not configured. Add GOOGLE_SHEETS_CREDENTIALS to Streamlit Secrets or credentials.json locally.")
+                self.client = None
+                self.spreadsheet = None
+                return
             
             # Set up the scope
             scope = [
@@ -36,7 +62,7 @@ class SheetsManager:
             creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
             self.client = gspread.authorize(creds)
             
-            # Get the sheet ID (hardcoded for now, can be moved to config)
+            # Get the sheet ID (can be moved to secrets/config later)
             sheet_id = '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0'
             self.spreadsheet = self.client.open_by_key(sheet_id)
             
