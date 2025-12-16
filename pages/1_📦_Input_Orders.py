@@ -423,7 +423,7 @@ if st.session_state.orders:
                     "archived"
                 ],
                 required=True,
-            )
+            ),
 
             # NEW: Assigned Driver Dropdown
             "assigned_driver": st.column_config.SelectboxColumn(
