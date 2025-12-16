@@ -26,7 +26,14 @@ st.title("🤖 Optimize Routes")
 st.caption("AI-powered route optimization using Google Gemini")
 
 # Check prerequisites
-if 'orders' not in st.session_state or not st.session_state.orders:
+if 'orders_for_routing' in st.session_state and st.session_state.orders_for_routing:
+    # Use selected orders
+    orders_to_route = st.session_state.orders_for_routing
+elif 'orders' in st.session_state and st.session_state.orders:
+    # Fallback to all orders if no selection
+    orders_to_route = st.session_state.orders
+    st.info("ℹ️ Using all orders (no specific selection made)")
+else:
     st.warning("⚠️ No orders loaded. Please add orders first.")
     if st.button("📦 Go to Input Orders"):
         st.switch_page("pages/1_📦_Input_Orders.py")
@@ -45,7 +52,7 @@ if 'optimized_routes' not in st.session_state:
 # Show current status
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Orders to Route", len(st.session_state.orders))
+    st.metric("Orders to Route", len(orders_to_route))
 with col2:
     st.metric("Available Drivers", len(st.session_state.selected_drivers))
 with col3:
@@ -82,7 +89,7 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
         with st.spinner("🤖 AI is optimizing routes... This may take 10-30 seconds..."):
             optimizer = AIOptimizer()
             result = optimizer.optimize_routes(
-                st.session_state.orders,
+                orders_to_route,  # Use selected orders only!
                 prepared_drivers
             )
             
@@ -177,7 +184,8 @@ if st.session_state.optimized_routes:
                 
                 db = Database()
                 db.save_routes(st.session_state.optimized_routes, today)
-                db.save_orders(st.session_state.orders, today)
+                # Save only the orders that were routed
+                db.save_orders(orders_to_route, today)
                 
                 st.success("✅ Routes and orders saved to Google Sheets!")
                 
@@ -221,7 +229,8 @@ with st.sidebar:
     st.divider()
     
     st.header("📊 Session Info")
-    st.write(f"Orders: {len(st.session_state.orders)}")
+    st.write(f"Orders to route: {len(orders_to_route)}")
+    st.write(f"Total orders: {len(st.session_state.get('orders', []))}")
     st.write(f"Drivers: {len(st.session_state.selected_drivers)}")
     st.write(f"Routes: {'Ready' if st.session_state.optimized_routes else 'Not ready'}")
 
