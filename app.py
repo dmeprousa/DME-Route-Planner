@@ -154,12 +154,32 @@ if total_orders > 0:
                      if st.session_state.orders[idx].get('status') != row['status']:
                          st.session_state.orders[idx]['status'] = row['status']
                          UserSession._auto_save_session()
+                         
+                         # Sync to Cloud DB
+                         try:
+                             from components.database import Database
+                             db = Database()
+                             db.save_orders(st.session_state.orders, date.today().strftime('%Y-%m-%d'))
+                             st.toast("Status synced to Cloud!", icon="☁️")
+                         except Exception as e:
+                             print(f"Cloud sync error: {e}")
+                             
                          st.rerun()
                      
                      # Sync Assigned Driver
                      if st.session_state.orders[idx].get('assigned_driver') != row['assigned_driver']:
                          st.session_state.orders[idx]['assigned_driver'] = row['assigned_driver']
                          UserSession._auto_save_session()
+                         
+                         # Sync to Cloud DB
+                         try:
+                             from components.database import Database
+                             db = Database()
+                             db.save_orders(st.session_state.orders, date.today().strftime('%Y-%m-%d'))
+                             st.toast("Driver synced to Cloud!", icon="☁️")
+                         except Exception as e:
+                             print(f"Cloud sync error: {e}")
+                             
                          st.rerun()
 
     st.divider()

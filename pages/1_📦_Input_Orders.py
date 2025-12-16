@@ -76,14 +76,7 @@ if 'orders' not in st.session_state:
         st.session_state.orders = []
 
 # Show current count and connection status
-col1, col2 = st.columns([2, 1])
-with col1:
-    st.metric("Orders Pending", len(st.session_state.orders))
-with col2:
-    if sheets.spreadsheet:
-        st.success("☁️ Cloud Connected")
-    else:
-        st.warning("⚠️ Local Only")
+
 
 st.divider()
 
@@ -365,7 +358,7 @@ st.divider()
 
 # Display current orders
 if st.session_state.orders:
-    st.subheader("📋 Current Orders List")
+    st.subheader("📋 Daily Workflow")
     
     # Prepare DataFrame for Editor
     df = pd.DataFrame(st.session_state.orders)
@@ -466,6 +459,17 @@ if st.session_state.orders:
                  st.session_state.orders[index]['assigned_driver'] = row['assigned_driver']
 
     col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col3:
+        if st.button("☁️ Cloud Sync", type="primary", use_container_width=True, help="Push orders to Google Sheets System"):
+            try:
+                from components.database import Database
+                db = Database()
+                date_str = today.strftime('%Y-%m-%d')
+                db.save_orders(st.session_state.orders, date_str)
+                st.toast("✅ Synced to Database!", icon="☁️")
+            except Exception as e:
+                st.error(f"Sync failed: {str(e)}")
     
     with col1:
         # Calculate selected count
