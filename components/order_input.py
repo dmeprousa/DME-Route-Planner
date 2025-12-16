@@ -31,19 +31,18 @@ Extract DME delivery/pickup orders from this text.
 TEXT:
 {text}
 
-Return a JSON array of orders with this structure:
+Return a JSON array of orders with this EXACT structure (use these specific keys):
 [
   {{
     "order_type": "Delivery" or "Pickup",
-    "customer_name": "name",
-    "customer_phone": "phone or empty",
-    "address": "street address",
-    "city": "city",
-    "zip_code": "zip",
-    "items": "equipment items",
-    "time_window_start": "HH:MM AM/PM or empty",
-    "time_window_end": "HH:MM AM/PM or empty",
-    "special_notes": "any special instructions or empty"
+    "customer": "Full Name (look for capitalized names)",
+    "phone": "Phone Number (extract any 10-digit number format)",
+    "address": "Street Address",
+    "city": "City Name",
+    "zip_code": "Zip Code",
+    "items": "Comma separated equipment list",
+    "time_window": "Single string e.g. '10am-2pm' (combine start/end)",
+    "notes": "Any special instructions or gate codes"
   }}
 ]
 
@@ -104,15 +103,14 @@ Return ONLY the JSON array, no other text.
             for order in orders:
                 normalized.append({
                     'order_type': order.get('order_type', order.get('type', 'Delivery')),
-                    'customer_name': order.get('customer_name', order.get('name', '')),
-                    'customer_phone': order.get('customer_phone', order.get('phone', '')),
+                    'customer': order.get('customer', order.get('customer_name', order.get('name', ''))),
+                    'phone': order.get('phone', order.get('customer_phone', '')),
                     'address': order.get('address', ''),
                     'city': order.get('city', ''),
                     'zip_code': str(order.get('zip_code', order.get('zip', ''))),
                     'items': order.get('items', order.get('equipment', '')),
-                    'time_window_start': order.get('time_window_start', order.get('start_time', '')),
-                    'time_window_end': order.get('time_window_end', order.get('end_time', '')),
-                    'special_notes': order.get('special_notes', order.get('notes', ''))
+                    'time_window': order.get('time_window', f"{order.get('time_window_start', '')} - {order.get('time_window_end', '')}".strip(' - ')),
+                    'notes': order.get('notes', order.get('special_notes', ''))
                 })
             
             return normalized
@@ -138,19 +136,18 @@ Return ONLY the JSON array, no other text.
             - If a field is missing, use an empty string "".
             - infer 'order_type' as 'Delivery' unless 'Pickup' or 'Exchange' is mentioned.
             
-            JSON Structure:
+            JSON Structure (Use these EXACT keys):
             [
               {
                 "order_type": "Delivery" or "Pickup",
-                "customer_name": "name",
-                "customer_phone": "phone or empty",
+                "customer": "Full Name",
+                "phone": "Phone Number",
                 "address": "street address",
                 "city": "city",
                 "zip_code": "zip code",
-                "items": "equipment items listed",
-                "time_window_start": "HH:MM AM/PM",
-                "time_window_end": "HH:MM AM/PM",
-                "special_notes": "notes"
+                "items": "items list comma separated",
+                "time_window": "Single string e.g. '10am-2pm'",
+                "notes": "special instructions"
               }
             ]
             
