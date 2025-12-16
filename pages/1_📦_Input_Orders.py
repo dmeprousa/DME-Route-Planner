@@ -416,7 +416,21 @@ if st.session_state.orders:
                 ],
                 required=True,
             )
+            ,
+            # Hide technical columns
+            "username": None,
+            "added_at": None,
+            "created_at": None,
+            "date": None,
+            "selected": None, # Hide duplicate boolean column if exists
+            "original_text": None,
+            "order_id": None
         },
+        column_order=[
+            "Selected", "status", "order_type", 
+            "customer", "phone", "address", "city", "zip_code", 
+            "items", "time_window", "notes"
+        ],
         disabled=[c for c in df.columns if c not in ["Selected", "status"]], # Safer way to disable columns
         hide_index=True,
         key="order_editor" 
