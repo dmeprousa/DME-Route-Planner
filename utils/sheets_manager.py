@@ -45,10 +45,12 @@ class SheetsManager:
             if not creds and hasattr(st, 'secrets') and 'gcp_oauth' in st.secrets:
                 try:
                     oauth_info = st.secrets["gcp_oauth"]
-                    SCOPES = [
-                        'https://spreadsheets.google.com/feeds',
-                        'https://www.googleapis.com/auth/drive'
-                    ]
+                    
+                    # Use scopes from secrets if available, otherwise default
+                    if "scopes" in oauth_info:
+                        SCOPES = oauth_info["scopes"]
+                    else:
+                        SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
                     
                     creds = Credentials(
                         token=oauth_info.get("token"),
