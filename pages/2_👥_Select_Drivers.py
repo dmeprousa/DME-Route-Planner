@@ -74,55 +74,69 @@ if all_drivers:
     if len(current_selection) != len(current_selected_names):
         SessionManager.save_state()
 
-    # 2. Configuration (Clean Data Editor)
+    # 2. Configuration with Current Location Support
     if current_selection:
-        st.subheader("⚙️ Configuration")
+        st.subheader("⚙️ Driver Configuration")
+        st.caption("Configure start time and location for each driver")
         
-        # Prepare data for editor
-        config_data = []
+        # Process each driver individually for better UX
         for d in current_selection:
             d_id = d.get('driver_id', '')
-            # Get existing config or default
+            d_name = d.get('driver_name')
             existing_conf = st.session_state.driver_config.get(d_id, {})
             
-            config_data.append({
-                "Driver Name": d.get('driver_name'),
-                "ID": d_id,
-                "Start Time": existing_conf.get('start_time', '09:00 AM'),
-                "Start Location": existing_conf.get('start_location', d.get('start_location', 'Office')),
-                "Vehicle": d.get('vehicle_type', 'Van')
-            })
-        
-        # Display editable table
-        edited_df = st.data_editor(
-            pd.DataFrame(config_data),
-            column_config={
-                "ID": st.column_config.TextColumn(disabled=True),
-                "Driver Name": st.column_config.TextColumn(disabled=True),
-                "Vehicle": st.column_config.TextColumn(disabled=True),
-                "Start Time": st.column_config.TextColumn(required=True),
-                "Start Location": st.column_config.TextColumn(required=True),
-            },
-            hide_index=True,
-            use_container_width=True,
-            key="driver_editor"
-        )
-        
-        # Update session state from editor & Save
-        changes_detected = False
-        for index, row in edited_df.iterrows():
-            d_id = row['ID']
-            if d_id:
-                new_conf = {
-                    'start_time': row['Start Time'],
-                    'start_location': row['Start Location']
+            with st.expander(f"🚚 {d_name}", expanded=True):
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    start_time = st.text_input(
+                        "Start Time",
+                        value=existing_conf.get('start_time', '09:00 AM'),
+                        key=f"time_{d_id}"
+                    )
+                    
+                    vehicle = d.get('vehicle_type', 'Van')
+                    st.info(f"🚐 Vehicle: {vehicle}")
+                
+                with col2:
+                    # Current Location Feature
+                    location_type = st.radio(
+                        "Starting from:",
+                        options=["Office", "Current Location"],
+                        index=0 if existing_conf.get('location_type', 'Office') == 'Office' else 1,
+                        key=f"loc_type_{d_id}",
+                        horizontal=True
+                    )
+                    
+                    if location_type == "Office":
+                        start_location = d.get('start_location', 'Office')
+                        st.info(f"🏢 Office: {start_location}")
+                        current_address = None
+                    else:
+                        current_address = st.text_input(
+                            "📍 Current Address (where driver is now)",
+                            value=existing_conf.get('current_address', ''),
+                            placeholder="123 Main St, City, CA 90001",
+                            key=f"curr_addr_{d_id}"
+                        )
+                        start_location = current_address if current_address else d.get('start_location', 'Office')
+                        
+                        if current_address:
+                            st.success(f"✅ Will route from: {current_address}")
+                        else:
+                            st.warning("⚠️ Enter current address or it will default to office")
+                
+                # Save to config
+                st.session_state.driver_config[d_id] = {
+                    'start_time': start_time,
+                    'start_location': start_location,
+                    'location_type': location_type,
+                    'current_address': current_address,
+                    'office_location': d.get('start_location', 'Office')
                 }
-                if st.session_state.driver_config.get(d_id) != new_conf:
-                    st.session_state.driver_config[d_id] = new_conf
-                    changes_detected = True
         
-        if changes_detected:
-            SessionManager.save_state()
+        # Save state
+        SessionManager.save_state()
 
         st.divider()
         
