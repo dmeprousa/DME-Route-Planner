@@ -118,7 +118,6 @@ with tab2:
                 st.rerun()
                 
         except Exception as e:
-        except Exception as e:
             st.error(f"Error reading file: {str(e)}")
 
 with tab_img:
