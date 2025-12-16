@@ -15,55 +15,86 @@ import os
 class SheetsManager:
     def __init__(self):
         """Initialize connection to Google Sheets"""
+        from google.oauth2 import service_account
+        from google.oauth2.credentials import Credentials
+        
+        creds = None
+        
         try:
-            creds_dict = None
-            
-            # Priority 1: Try Streamlit Secrets (for Cloud deployment)
-            try:
-                if hasattr(st, 'secrets') and 'GOOGLE_SHEETS_CREDENTIALS' in st.secrets:
-                    secret_value = st.secrets['GOOGLE_SHEETS_CREDENTIALS']
-                    
-                    # Handle both formats: dict (TOML table) or string (JSON)
-                    if isinstance(secret_value, dict):
-                        creds_dict = dict(secret_value)
-                    elif isinstance(secret_value, str):
-                        creds_dict = json.loads(secret_value)
+            # Priority 1: Try Service Account from Streamlit Secrets
+            if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
+                try:
+                    # Check if it's a dict or a string
+                    if isinstance(st.secrets["gcp_service_account"], str):
+                        service_account_info = json.loads(st.secrets["gcp_service_account"])
                     else:
-                        st.warning(f"Unexpected credentials format: {type(secret_value)}")
+                        service_account_info = st.secrets["gcp_service_account"]
                     
-                    # st.success("✅ Using Google Sheets credentials from Streamlit Secrets")
-            except Exception as e:
-                st.warning(f"Could not load from Streamlit Secrets: {str(e)}")
+                    SCOPES = [
+                        'https://spreadsheets.google.com/feeds',
+                        'https://www.googleapis.com/auth/drive'
+                    ]
+                    
+                    creds = service_account.Credentials.from_service_account_info(
+                        service_account_info, scopes=SCOPES
+                    )
+                except Exception as e:
+                    st.warning(f"Could not load service account: {str(e)}")
             
-            # Priority 2: Try local credentials.json (for local development)
-            if not creds_dict:
+            # Priority 2: Try OAuth from Streamlit Secrets (gcp_oauth)
+            if not creds and hasattr(st, 'secrets') and 'gcp_oauth' in st.secrets:
+                try:
+                    oauth_info = st.secrets["gcp_oauth"]
+                    SCOPES = [
+                        'https://spreadsheets.google.com/feeds',
+                        'https://www.googleapis.com/auth/drive'
+                    ]
+                    
+                    creds = Credentials(
+                        token=oauth_info.get("token"),
+                        refresh_token=oauth_info.get("refresh_token"),
+                        token_uri=oauth_info.get("token_uri"),
+                        client_id=oauth_info.get("client_id"),
+                        client_secret=oauth_info.get("client_secret"),
+                        scopes=SCOPES
+                    )
+                except Exception as e:
+                    st.warning(f"Could not load OAuth credentials: {str(e)}")
+            
+            # Priority 3: Try local credentials.json (for local development)
+            if not creds:
                 creds_path = 'credentials.json'
                 if os.path.exists(creds_path):
                     try:
+                        SCOPES = [
+                            'https://spreadsheets.google.com/feeds',
+                            'https://www.googleapis.com/auth/drive'
+                        ]
+                        
                         with open(creds_path, 'r') as f:
                             creds_dict = json.load(f)
-                        # st.info("📁 Using credentials from local credentials.json")
+                        creds = service_account.Credentials.from_service_account_info(
+                            creds_dict, scopes=SCOPES
+                        )
                     except Exception as e:
                         st.warning(f"Could not read credentials.json: {str(e)}")
             
             # If no credentials found anywhere
-            if not creds_dict:
-                st.warning("⚠️ Google Sheets credentials not configured. Add GOOGLE_SHEETS_CREDENTIALS to Streamlit Secrets or credentials.json locally.")
+            if not creds:
+                st.warning("⚠️ Google Sheets credentials not configured. Add 'gcp_oauth' or 'gcp_service_account' to Streamlit Secrets.")
                 self.client = None
                 self.spreadsheet = None
                 return
             
-            # Set up the scope
-            scope = [
-                'https://spreadsheets.google.com/feeds',
-                'https://www.googleapis.com/auth/drive'
-            ]
-            
-            creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+            # Authorize with gspread
             self.client = gspread.authorize(creds)
             
-            # Get the sheet ID (can be moved to secrets/config later)
-            sheet_id = '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0'
+            # Get the sheet ID
+            if hasattr(st, 'secrets') and 'GOOGLE_SHEET_ID' in st.secrets:
+                sheet_id = st.secrets['GOOGLE_SHEET_ID']
+            else:
+                sheet_id = '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0'
+            
             self.spreadsheet = self.client.open_by_key(sheet_id)
             
         except Exception as e:
