@@ -88,10 +88,18 @@ class SheetsManager:
                 self.spreadsheet = None
                 return
             
-            # Authorize with gspread (NEW method - fixes deprecation warning)
-            from gspread.http_client import HTTPClient
-            http_client = HTTPClient(creds)
-            self.client = gspread.Client(auth=creds, http_client=http_client)
+            # Authorize with gspread (Universal Compatibility)
+            try:
+                # Try new method (gspread >= 6.0)
+                from gspread.http_client import HTTPClient
+                http_client = HTTPClient(creds)
+                self.client = gspread.Client(auth=creds, http_client=http_client)
+            except ImportError:
+                # Fallback to old method (gspread < 6.0)
+                self.client = gspread.authorize(creds)
+            except Exception:
+                # General fallback
+                self.client = gspread.authorize(creds)
             
             # Get the sheet ID
             if hasattr(st, 'secrets') and 'GOOGLE_SHEET_ID' in st.secrets:
