@@ -20,3 +20,6 @@ reportlab==4.0.7
 
 # Utilities
 requests==2.31.0
+
+# Image Processing
+Pillow>=10.0.0

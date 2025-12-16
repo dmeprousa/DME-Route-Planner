@@ -19,7 +19,24 @@ st.set_page_config(page_title="Select Drivers", page_icon="👥", layout="wide")
 # Require authentication
 UserSession.require_auth()
 
-st.title("👥 Select Drivers (Updated)")
+st.title("👥 Select Drivers")
+
+# Check if we have orders to route
+if 'orders_for_routing' in st.session_state and st.session_state.orders_for_routing:
+    orders_count = len(st.session_state.orders_for_routing)
+    st.success(f"🚚 Ready to assign {orders_count} orders to drivers")
+elif 'orders' in st.session_state and st.session_state.orders:
+    # Fallback to all orders if no specific selection
+    st.session_state.orders_for_routing = st.session_state.orders
+    orders_count = len(st.session_state.orders)
+    st.info(f"📦 Using all {orders_count} orders")
+else:
+    st.warning("⚠️ No orders to route. Please add orders first.")
+    if st.button("📦 Go to Input Orders"):
+        st.switch_page("pages/1_📦_Input_Orders.py")
+    st.stop()
+
+st.divider()
 
 # Initialize session state if clean start
 if 'selected_drivers' not in st.session_state:

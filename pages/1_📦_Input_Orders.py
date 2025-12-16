@@ -13,6 +13,7 @@ from datetime import date
 from components.order_input import OrderInput
 from components.user_session import UserSession
 from utils.validators import validate_order
+from utils.sheets_manager import SheetsManager
 import pandas as pd
 
 st.set_page_config(page_title="Input Orders", page_icon="📦", layout="wide")
@@ -23,12 +24,21 @@ UserSession.require_auth()
 st.title("📦 Input Orders")
 st.caption("Add delivery/pickup orders for today")
 
-# Initialize session state
+# Initialize Sheets Manager
+sheets = SheetsManager()
+
+# Initialize session state and load from Google Sheets
 if 'orders' not in st.session_state:
-    st.session_state.orders = []
+    # Load pending orders from Google Sheets
+    current_user = UserSession.get_current_user()
+    if current_user and sheets.spreadsheet:
+        pending = sheets.load_pending_orders(current_user)
+        st.session_state.orders = pending
+    else:
+        st.session_state.orders = []
 
 # Show current count
-st.metric("Orders Loaded", len(st.session_state.orders))
+st.metric("Orders Pending", len(st.session_state.orders))
 
 st.divider()
 
@@ -68,6 +78,10 @@ with tab1:
                         
                         if added > 0:
                             st.success(f"✅ Added {added} orders!")
+                            # Save to Google Sheets
+                            current_user = UserSession.get_current_user()
+                            if current_user and sheets.spreadsheet:
+                                sheets.save_pending_orders(st.session_state.orders, current_user)
                         if errors:
                             for error in errors:
                                 st.warning(error)
@@ -110,6 +124,10 @@ with tab2:
                 
                 if added > 0:
                     st.success(f"✅ Added {added} orders!")
+                    # Save to Google Sheets
+                    current_user = UserSession.get_current_user()
+                    if current_user and sheets.spreadsheet:
+                        sheets.save_pending_orders(st.session_state.orders, current_user)
                 if errors:
                     with st.expander("⚠️ Validation Errors"):
                         for error in errors:
@@ -156,6 +174,10 @@ with tab_img:
                         
                         if added > 0:
                             st.success(f"✅ Extracted {added} orders from image!")
+                            # Save to Google Sheets
+                            current_user = UserSession.get_current_user()
+                            if current_user and sheets.spreadsheet:
+                                sheets.save_pending_orders(st.session_state.orders, current_user)
                             st.balloons()
                             st.rerun()
                         
@@ -210,6 +232,10 @@ with tab3:
             
             if is_valid:
                 st.session_state.orders.append(order)
+                # Save to Google Sheets
+                current_user = UserSession.get_current_user()
+                if current_user and sheets.spreadsheet:
+                    sheets.save_pending_orders(st.session_state.orders, current_user)
                 st.success("✅ Order added!")
                 st.rerun()
             else:
@@ -281,9 +307,20 @@ if st.session_state.orders:
                  st.session_state.orders = []
                  st.rerun()
 
+
     with col2:
-        if st.button("👥 Next: Select Drivers →", type="primary", use_container_width=True):
-            st.switch_page("pages/2_👥_Select_Drivers.py")
+        # Send selected orders to routes
+        if count > 0:
+            if st.button(f"✈️ Send Selected ({count}) to Routes", type="primary", use_container_width=True):
+                # Mark these as "for routing"
+                st.session_state.orders_for_routing = [st.session_state.orders[i] for i in selected_indices]
+                st.success(f"✅ {count} orders ready for routing!")
+                st.switch_page("pages/2_👥_Select_Drivers.py")
+        else:
+            if st.button("👥 Next: Select Drivers →", use_container_width=True):
+                # If nothing selected, send all
+                st.session_state.orders_for_routing = st.session_state.orders
+                st.switch_page("pages/2_👥_Select_Drivers.py")
     with col3:
         if st.button("🏠 Back to Home", use_container_width=True):
             st.switch_page("app.py")
