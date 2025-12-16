@@ -23,8 +23,10 @@ class SessionManager:
         try:
             with open(state_file, 'w') as f:
                 json.dump(state_to_save, f, indent=2)
-        except Exception as e:
-            print(f"Error saving state: {e}")
+        except (IOError, OSError, PermissionError):
+            # Silently fail on read-only filesystems (e.g., Streamlit Cloud)
+            # State will only persist in session_state, not on disk
+            pass
 
     @staticmethod
     def load_state():
@@ -62,6 +64,7 @@ class SessionManager:
         if os.path.exists(state_file):
             try:
                 os.remove(state_file)
-            except Exception as e:
-                print(f"Error clearing state: {e}")
+            except (IOError, OSError, PermissionError):
+                # Silently fail on read-only filesystems (e.g., Streamlit Cloud)
+                pass
 

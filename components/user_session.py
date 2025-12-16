@@ -294,18 +294,26 @@ class UserSession:
     @staticmethod
     def log_session_start(username):
         """Log when user starts a session"""
-        log_file = "user_sessions.log"
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_file, 'a') as f:
-            f.write(f"{timestamp} - {username} - LOGIN_SUCCESS\n")
+        try:
+            log_file = "user_sessions.log"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(log_file, 'a') as f:
+                f.write(f"{timestamp} - {username} - LOGIN_SUCCESS\n")
+        except (IOError, OSError, PermissionError):
+            # Silently fail on read-only filesystems (e.g., Streamlit Cloud)
+            pass
     
     @staticmethod
     def log_failed_login(username):
         """Log failed login attempt"""
-        log_file = "user_sessions.log"
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_file, 'a') as f:
-            f.write(f"{timestamp} - {username} - LOGIN_FAILED\n")
+        try:
+            log_file = "user_sessions.log"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(log_file, 'a') as f:
+                f.write(f"{timestamp} - {username} - LOGIN_FAILED\n")
+        except (IOError, OSError, PermissionError):
+            # Silently fail on read-only filesystems (e.g., Streamlit Cloud)
+            pass
     
     @staticmethod
     def is_logged_in():
@@ -338,10 +346,14 @@ class UserSession:
     @staticmethod
     def log_session_end(username):
         """Log when user ends a session"""
-        log_file = "user_sessions.log"
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_file, 'a') as f:
-            f.write(f"{timestamp} - {username} - LOGOUT\n")
+        try:
+            log_file = "user_sessions.log"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(log_file, 'a') as f:
+                f.write(f"{timestamp} - {username} - LOGOUT\n")
+        except (IOError, OSError, PermissionError):
+            # Silently fail on read-only filesystems (e.g., Streamlit Cloud)
+            pass
     
     @staticmethod
     def show_user_info_sidebar():
