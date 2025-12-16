@@ -370,6 +370,11 @@ if st.session_state.orders:
     # Prepare DataFrame for Editor
     df = pd.DataFrame(st.session_state.orders)
     
+    # Ensure 'status' column exists and fill n/a
+    if 'status' not in df.columns:
+        df['status'] = 'pending'
+    df['status'] = df['status'].fillna('pending')
+    
     # Add 'Select' column for checkboxes
     if 'selected_rows' not in st.session_state:
         st.session_state.selected_rows = [False] * len(df)
@@ -412,7 +417,7 @@ if st.session_state.orders:
                 required=True,
             )
         },
-        disabled=df.columns.drop(["Selected", "status"]), # Enable editing for Selected AND status
+        disabled=[c for c in df.columns if c not in ["Selected", "status"]], # Safer way to disable columns
         hide_index=True,
         key="order_editor" 
     )
