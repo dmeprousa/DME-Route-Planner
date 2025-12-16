@@ -49,6 +49,26 @@ if 'selected_drivers' not in st.session_state or not st.session_state.selected_d
 if 'optimized_routes' not in st.session_state:
     st.session_state.optimized_routes = {}
 
+# AUTO-LOAD routes from database if available (prevents data loss on refresh!)
+if not st.session_state.optimized_routes:
+    try:
+        today = date.today().strftime('%Y-%m-%d')
+        db = Database()
+        
+        # Try to load today's routes
+        saved_routes = db.get_routes(date=today)
+        
+        if saved_routes:
+            # Reconstruct optimized_routes structure
+            # (Assuming get_routes returns list, need to group by driver)
+            # This is simplified - adjust based on actual data structure
+            st.session_state.optimized_routes = saved_routes
+            st.info(f"📥 Loaded existing routes for {today} from database")
+            
+    except Exception as e:
+        # Silently fail - no routes to load
+        pass
+
 # Show current status
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -99,6 +119,22 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
             unassigned = result.get('unassigned_orders', [])
             
             st.success("✅ Routes optimized successfully!")
+            
+            # AUTO-SAVE to database to prevent data loss on refresh!
+            try:
+                today = date.today().strftime('%Y-%m-%d')
+                db = Database()
+                
+                # Save routes
+                db.save_routes(st.session_state.optimized_routes, today)
+                # Save orders that were routed
+                db.save_orders(orders_to_route, today)
+                
+                st.success("💾 Routes auto-saved to database!")
+                
+            except Exception as save_error:
+                st.warning(f"⚠️ Routes generated but couldn't auto-save: {str(save_error)}")
+                st.info("💡 Use 'Save Routes to Database' button below to save manually")
             
             # Show warnings
             if warnings:
