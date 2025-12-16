@@ -83,11 +83,14 @@ with col3:
 
 st.divider()
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
+    if st.button("📍 Track Orders", use_container_width=True, type="primary"):
+        st.switch_page("pages/6_📍_Track_Orders.py")
+with col2:
     if st.button("📊 View History", use_container_width=True):
         st.switch_page("pages/5_📊_History.py")
-with col2:
+with col3:
     if st.button("📱 Contact Info", use_container_width=True):
         st.info("**Hospice Pro DME**\n📞 760-879-1071")
 

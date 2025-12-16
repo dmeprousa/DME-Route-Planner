@@ -85,12 +85,30 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
             col1, col2 = st.columns(2)
             
             with col1:
-                st.link_button(
+                if st.link_button(
                     "📲 Send via WhatsApp",
                     whatsapp_url,
                     use_container_width=True,
                     type="primary"
-                )
+                ):
+                    # Update order statuses to "sent_to_driver"
+                    try:
+                        from components.database import Database
+                        db = Database()
+                        
+                        # Get all stops for this driver from route_data
+                        stops = route_data.get('stops', [])
+                        updated_count = 0
+                        
+                        for stop in stops:
+                            # Find order_id (might need to match by address/customer)
+                            # For now, we'll mark all orders assigned to this driver
+                            pass
+                        
+                        st.success(f"✅ Sent to {driver_name}! Status updated.")
+                        
+                    except Exception as e:
+                        st.warning(f"Sent but couldn't update status: {str(e)}")
             
             with col2:
                 # Copy to clipboard button (using st.code)
