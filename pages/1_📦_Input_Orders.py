@@ -37,8 +37,15 @@ if 'orders' not in st.session_state:
     else:
         st.session_state.orders = []
 
-# Show current count
-st.metric("Orders Pending", len(st.session_state.orders))
+# Show current count and connection status
+col1, col2 = st.columns([2, 1])
+with col1:
+    st.metric("Orders Pending", len(st.session_state.orders))
+with col2:
+    if sheets.spreadsheet:
+        st.success("☁️ Cloud Connected")
+    else:
+        st.warning("⚠️ Local Only")
 
 st.divider()
 
@@ -81,7 +88,12 @@ with tab1:
                             # Save to Google Sheets
                             current_user = UserSession.get_current_user()
                             if current_user and sheets.spreadsheet:
-                                sheets.save_pending_orders(st.session_state.orders, current_user)
+                                if sheets.save_pending_orders(st.session_state.orders, current_user):
+                                    st.success("☁️ Synced to Google Sheets!")
+                                else:
+                                    st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
+                            elif not sheets.spreadsheet:
+                                st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
                         if errors:
                             for error in errors:
                                 st.warning(error)
@@ -127,7 +139,12 @@ with tab2:
                     # Save to Google Sheets
                     current_user = UserSession.get_current_user()
                     if current_user and sheets.spreadsheet:
-                        sheets.save_pending_orders(st.session_state.orders, current_user)
+                        if sheets.save_pending_orders(st.session_state.orders, current_user):
+                            st.success("☁️ Synced to Google Sheets!")
+                        else:
+                            st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
+                    elif not sheets.spreadsheet:
+                        st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
                 if errors:
                     with st.expander("⚠️ Validation Errors"):
                         for error in errors:
@@ -177,7 +194,12 @@ with tab_img:
                             # Save to Google Sheets
                             current_user = UserSession.get_current_user()
                             if current_user and sheets.spreadsheet:
-                                sheets.save_pending_orders(st.session_state.orders, current_user)
+                                if sheets.save_pending_orders(st.session_state.orders, current_user):
+                                    st.success("☁️ Synced to Google Sheets!")
+                                else:
+                                    st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
+                            elif not sheets.spreadsheet:
+                                st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
                             st.balloons()
                             st.rerun()
                         
@@ -235,8 +257,15 @@ with tab3:
                 # Save to Google Sheets
                 current_user = UserSession.get_current_user()
                 if current_user and sheets.spreadsheet:
-                    sheets.save_pending_orders(st.session_state.orders, current_user)
-                st.success("✅ Order added!")
+                    if sheets.save_pending_orders(st.session_state.orders, current_user):
+                        st.success("✅ Order added and synced!")
+                    else:
+                        st.success("✅ Order added!")
+                        st.warning("⚠️ Failed to sync with Google Sheets.")
+                else:
+                    st.success("✅ Order added!")
+                    if not sheets.spreadsheet:
+                        st.warning("⚠️ Google Sheets not connected. Saved locally only.")
                 st.rerun()
             else:
                 st.error(f"❌ {msg}")
