@@ -101,11 +101,58 @@ st.divider()
 # --- RECENT ORDERS PREVIEW ---
 if total_orders > 0:
     st.subheader("📝 Recent Orders")
-    # Show simplified view of last 5 orders
+    
     import pandas as pd
     if st.session_state.orders:
-        display_df = pd.DataFrame(st.session_state.orders)[['customer', 'address', 'status', 'time_window']].tail(5)
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        df_display = pd.DataFrame(st.session_state.orders)
+        
+        # Ensure columns exist to prevent KeyError
+        columns_to_show = ['customer', 'address', 'status', 'time_window']
+        for col in columns_to_show:
+            if col not in df_display.columns:
+                df_display[col] = "" # Fill missing columns
+                
+        # Show last 5
+        st.dataframe(
+            df_display[columns_to_show].tail(5),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    st.divider()
+
+    # --- END OF DAY REPORT ---
+    with st.expander("📉 End of Day Report", expanded=False):
+        st.markdown("### Daily Summary Report")
+        
+        # 1. Driver Performance
+        if 'selected_drivers' in st.session_state and st.session_state.selected_drivers:
+            st.write("**👨‍✈️ Driver Performance**")
+            driver_stats = []
+            
+            # Group orders by driver (if assigned)
+            # This requires orders to have 'assigned_driver' field which comes from Optimization
+            if 'assigned_driver' in df_display.columns:
+                driver_counts = df_display['assigned_driver'].value_counts()
+                st.bar_chart(driver_counts)
+            else:
+                st.info("No driver assignments recorded yet.")
+        
+        # 2. Download Data
+        st.write("**📥 Export Data**")
+        
+        csv = df_display.to_csv(index=False).encode('utf-8')
+        
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            st.download_button(
+                label="📄 Download Today's Orders (CSV)",
+                data=csv,
+                file_name=f"dme_orders_{date.today()}.csv",
+                mime="text/csv",
+                type="primary"
+            )
+
 else:
     st.info("👋 No orders yet today! Click 'Add New Orders' to get started.")
 
