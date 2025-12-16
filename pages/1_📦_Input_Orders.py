@@ -462,25 +462,48 @@ if st.session_state.orders:
         count = len(selected_indices)
         
         if count > 0:
+            # Initialize confirm state if not exists
+            if 'confirming_delete' not in st.session_state:
+                st.session_state.confirming_delete = False
+                
             if st.button(f"🗑️ Delete Selected ({count})", use_container_width=True):
-                # Confirmation with checkbox
+                st.session_state.confirming_delete = True
+                
+            if st.session_state.confirming_delete:
                 st.warning(f"⚠️ You are about to delete {count} orders. This cannot be undone!")
-                confirm = st.checkbox(f"Yes, I want to delete {count} orders", key="confirm_delete")
-                if confirm:
-                    if st.button("✅ Confirm Deletion", type="primary"):
+                col_conf1, col_conf2 = st.columns(2)
+                with col_conf1:
+                    if st.button("✅ Yes, Delete", type="primary", key="btn_confirm_del"):
                         # Remove selected orders (reverse order to avoid index shift issues)
                         for index in sorted(selected_indices, reverse=True):
                             del st.session_state.orders[index]
+                        st.session_state.confirming_delete = False # Reset
                         st.success(f"🗑️ Deleted {count} orders.")
                         st.rerun()
+                with col_conf2:
+                    if st.button("❌ Cancel", key="btn_cancel_del"):
+                        st.session_state.confirming_delete = False
+                        st.rerun()
+                        
         else:
+            if 'confirming_clear' not in st.session_state:
+                st.session_state.confirming_clear = False
+                
             if st.button("🗑️ Clear All Orders", use_container_width=True):
+                st.session_state.confirming_clear = True
+                
+            if st.session_state.confirming_clear:
                 st.error("⚠️ WARNING: This will delete ALL orders!")
-                confirm_clear = st.checkbox("I understand this will delete everything", key="confirm_clear_all")
-                if confirm_clear:
-                    if st.button("✅ Yes, Clear Everything", type="primary"):
+                col_clr1, col_clr2 = st.columns(2)
+                with col_clr1:
+                    if st.button("✅ Confirm Clear All", type="primary", key="btn_confirm_clr"):
                         st.session_state.orders = []
+                        st.session_state.confirming_clear = False
                         st.success("🆑 All orders cleared!")
+                        st.rerun()
+                with col_clr2:
+                    if st.button("❌ Cancel", key="btn_cancel_clr"):
+                        st.session_state.confirming_clear = False
                         st.rerun()
 
 
