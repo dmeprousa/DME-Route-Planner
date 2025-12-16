@@ -424,7 +424,7 @@ if st.session_state.orders:
                 ],
                 required=True,
             )
-            ),
+
             # NEW: Assigned Driver Dropdown
             "assigned_driver": st.column_config.SelectboxColumn(
                 "💂 Assigned Driver",
