@@ -5,10 +5,10 @@ streamlit>=1.30.0
 google-generativeai>=0.8.0
 
 # Google Sheets with OAuth
-gspread==5.12.0
-google-auth==2.23.0
-google-auth-oauthlib==1.1.0
-google-auth-httplib2==0.1.1
+gspread>=6.1.2
+google-auth>=2.30.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
 
 # Data Processing
 pandas>=2.2.0
