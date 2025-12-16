@@ -87,11 +87,26 @@ with col2:
 
 st.divider()
 
-# Input method tabs
-# Input method tabs
-tab1, tab2, tab_img, tab3 = st.tabs(["📝 Paste Text", "📄 Upload File", "📸 Upload Image", "✍️ Manual Entry"])
+# Input method selector (replaces tabs - this way selection persists!)
+if 'selected_input_method' not in st.session_state:
+    st.session_state.selected_input_method = "📸 Upload Image"  # Default to most used
 
-with tab1:
+st.subheader("Choose Input Method")
+selected_method = st.radio(
+    "How do you want to add orders?",
+    ["📝 Paste Text", "📄 Upload File", "📸 Upload Image", "✍️ Manual Entry"],
+    index=["📝 Paste Text", "📄 Upload File", "📸 Upload Image", "✍️ Manual Entry"].index(st.session_state.selected_input_method),
+    horizontal=True,
+    key="input_method_selector"
+)
+
+# Update session state
+st.session_state.selected_input_method = selected_method
+
+st.divider()
+
+# Display selected input method
+if selected_method == "📝 Paste Text":
     st.subheader("Paste Order Text")
     st.write("Paste order information and AI will extract the details")
     
@@ -146,7 +161,7 @@ with tab1:
             else:
                 st.warning("Please paste some text first")
 
-with tab2:
+elif selected_method == "📄 Upload File":
     st.subheader("Upload CSV or Excel File")
     st.write("File should contain columns: address, city, items, etc.")
     
@@ -215,7 +230,7 @@ with tab2:
         except Exception as e:
             st.error(f"Error reading file: {str(e)}")
 
-with tab_img:
+elif selected_method == "📸 Upload Image":
     st.subheader("Upload Order Image")
     st.write("Upload a screenshot or photo of the order (e.g. from email or fax)")
     
@@ -280,7 +295,7 @@ with tab_img:
                 except Exception as e:
                     st.error(f"Error parsing image: {str(e)}")
 
-with tab3:
+elif selected_method == "✍️ Manual Entry":
     st.subheader("Manual Order Entry")
     
     with st.form("manual_order_form"):
