@@ -82,16 +82,20 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
         # Send button with status update
         if phone_input:
             whatsapp_url = create_whatsapp_url(phone_input, whatsapp_message)
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             
             with col1:
-                # Use regular button instead of link_button to track clicks
-                if st.button(
+                # Use link_button - this WORKS!
+                st.link_button(
                     "📲 Send via WhatsApp",
+                    whatsapp_url,
                     use_container_width=True,
-                    type="primary",
-                    key=f"send_{driver_name}"
-                ):
+                    type="primary"
+                )
+            
+            with col2:
+                # Separate button to mark as sent
+                if st.button("✅ Mark as Sent", key=f"mark_sent_{driver_name}", use_container_width=True):
                     # Update order statuses to "sent_to_driver"
                     try:
                         from components.database import Database
@@ -121,24 +125,17 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
                                         updated_count += 1
                                         break
                         
-                        # Open WhatsApp
-                        st.markdown(f'<meta http-equiv="refresh" content="0; url={whatsapp_url}">', unsafe_allow_html=True)
-                        
                         if updated_count > 0:
-                            st.success(f"✅ Sent to {driver_name}! Updated {updated_count} orders to 'Sent to Driver' status.")
+                            st.success(f"✅ Updated {updated_count} orders to 'Sent to Driver' status!")
                         else:
-                            st.success(f"✅ Sent to {driver_name}!")
-                            st.info("💡 Tip: Save routes to database first to enable automatic status tracking.")
+                            st.info("💡 Tip: Save routes to database first to enable status tracking.")
                         
-                        # Also provide the link
-                        st.markdown(f"[📲 Click here if WhatsApp didn't open]({whatsapp_url})")
+                        st.rerun()
                         
                     except Exception as e:
-                        # Still send even if status update fails
-                        st.warning(f"Sent but couldn't auto-update status: {str(e)}")
-                        st.markdown(f"[📲 Click here to send via WhatsApp]({whatsapp_url})")
+                        st.error(f"Error updating status: {str(e)}")
             
-            with col2:
+            with col3:
                 # Copy to clipboard button
                 if st.button("📋 Copy Message", key=f"copy_{driver_name}", use_container_width=True):
                     st.code(whatsapp_message, language=None)
