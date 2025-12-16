@@ -397,15 +397,36 @@ if st.session_state.orders:
                 "Select",
                 help="Select order to delete",
                 default=False,
+            ),
+            "status": st.column_config.SelectboxColumn(
+                "Status",
+                help="Order status",
+                width="medium",
+                options=[
+                    "pending",
+                    "sent_to_driver",
+                    "delivered",
+                    "failed",
+                    "archived"
+                ],
+                required=True,
             )
         },
-        disabled=df.columns.drop("Selected"), # Disable editing other columns implies view-only except checkbox
+        disabled=df.columns.drop(["Selected", "status"]), # Enable editing for Selected AND status
         hide_index=True,
-        use_container_width=True,
         key="order_editor" 
     )
 
     # Actions Bar
+    
+    # Sync status changes back to session state
+    # Identify differneces and update
+    for index, row in edited_df.iterrows():
+        if index < len(st.session_state.orders):
+            if st.session_state.orders[index].get('status') != row['status']:
+                st.session_state.orders[index]['status'] = row['status']
+                # Trigger save to sheets if needed - kept local for speed now
+
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
