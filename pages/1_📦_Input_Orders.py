@@ -404,7 +404,7 @@ if st.session_state.orders:
                 width="medium",
                 options=[
                     "pending",
-                    "sent_to_driver",
+                    # "sent_to_driver", # Removed to prevent logic error (no driver assigned yet)
                     "delivered",
                     "failed",
                     "archived"
