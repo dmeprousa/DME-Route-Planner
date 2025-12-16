@@ -25,6 +25,33 @@ auth_setup.py
 *.swp
 
 # OS
+# Environment
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Auth
+credentials.json
+token.pickle
+auth_setup.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
 .DS_Store
 Thumbs.db
 
@@ -34,6 +61,7 @@ data/real_*.csv
 # User Sessions
 app_state_*.json
 user_sessions.log
+.session_cache_*.json
 
 # Helper and test scripts
 fix_passwords.py

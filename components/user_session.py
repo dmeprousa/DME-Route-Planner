@@ -7,6 +7,7 @@ Now includes password authentication for security
 import streamlit as st
 import json
 import os
+import glob
 import hashlib
 from datetime import datetime
 from dotenv import load_dotenv
@@ -401,6 +402,9 @@ class UserSession:
         """Require authentication for a page - call this at the top of each page"""
         UserSession.init_user()
         
+        # NEW: Auto-restore session if lost
+        UserSession._auto_restore_session()
+        
         if not UserSession.is_logged_in():
             st.error("🔒 This page requires authentication")
             st.info("Please login from the home page to continue")
@@ -410,6 +414,61 @@ class UserSession:
             
             st.stop()
         
+        # Auto-save session state periodically
+        UserSession._auto_save_session()
+        
         # NOTE: Sidebar info is now called manually at the end of each page 
         # to ensure it appears BELOW other sidebar content like Tips.
-
+    
+    @staticmethod
+    def _auto_save_session():
+        """Auto-save critical session data to browser localStorage simulation"""
+        try:
+            if UserSession.is_logged_in():
+                # Save minimal critical state
+                critical_state = {
+                    'current_user': st.session_state.get('current_user'),
+                    'user_name': st.session_state.get('user_name'),
+                    'user_role': st.session_state.get('user_role'),
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                # Save to file (simple persistence)
+                cache_file = f".session_cache_{st.session_state.current_user}.json"
+                with open(cache_file, 'w') as f:
+                    json.dump(critical_state, f)
+                    
+        except Exception:
+            # Fail silently - don't break the app
+            pass
+    
+    @staticmethod
+    def _auto_restore_session():
+        """Try to restore session from cache if lost"""
+        try:
+            # If session is lost, try to restore
+            if not UserSession.is_logged_in():
+                # Check all possible cached sessions
+                
+                cache_files = glob.glob(".session_cache_*.json")
+                
+                # Find most recent cache
+                if cache_files:
+                    most_recent = max(cache_files, key=os.path.getmtime)
+                    
+                    with open(most_recent, 'r') as f:
+                        cached_state = json.load(f)
+                    
+                    # Check if cache is recent (within last 8 hours)
+                    cached_time = datetime.fromisoformat(cached_state['timestamp'])
+                    if (datetime.now() - cached_time).total_seconds() < 28800:  # 8 hours
+                        # Restore session
+                        st.session_state.current_user = cached_state['current_user']
+                        st.session_state.user_name = cached_state['user_name']
+                        st.session_state.user_role = cached_state['user_role']
+                        
+                        # Silent restoration - user won't notice
+                        
+        except Exception:
+            # Fail silently
+            pass
