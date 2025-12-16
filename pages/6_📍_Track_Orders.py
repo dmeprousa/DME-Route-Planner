@@ -217,10 +217,19 @@ with st.sidebar:
     - Filter by status or date
     
     **Status Options:**
-    - 🟡 Pending: Not sent yet
-    - 🔵 Sent to Driver: On the way
-    - 🟢 Delivered: Completed ✅
-    - 🔴 Failed: Problem occurred
+    - 🟡 **Pending**: لسه ماتوزعش على driver
+    - 🔵 **Sent to Driver**: اتبعت للسواق (auto-updates when you send routes!)
+    - 🟢 **Delivered**: وصل للعميل ✅
+    - 🔴 **Failed**: Problem occurred
+    
+    **Use Failed (🔴) when:**
+    - عميل مش موجود في البيت (No one home)
+    - عنوان غلط (Wrong address)
+    - عميل رفض الاستلام (Customer refused)
+    - معدات مش مناسبة (Wrong equipment)
+    - أي سبب منع التسليم
+    
+    **💡 Tip**: Failed orders can be rescheduled to another day.
     """)
     
     st.divider()

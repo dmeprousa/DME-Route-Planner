@@ -79,17 +79,18 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
         with st.expander("📝 Preview WhatsApp Message"):
             st.text(whatsapp_message)
         
-        # Send button
+        # Send button with status update
         if phone_input:
             whatsapp_url = create_whatsapp_url(phone_input, whatsapp_message)
             col1, col2 = st.columns(2)
             
             with col1:
-                if st.link_button(
+                # Use regular button instead of link_button to track clicks
+                if st.button(
                     "📲 Send via WhatsApp",
-                    whatsapp_url,
                     use_container_width=True,
-                    type="primary"
+                    type="primary",
+                    key=f"send_{driver_name}"
                 ):
                     # Update order statuses to "sent_to_driver"
                     try:
@@ -100,18 +101,45 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
                         stops = route_data.get('stops', [])
                         updated_count = 0
                         
-                        for stop in stops:
-                            # Find order_id (might need to match by address/customer)
-                            # For now, we'll mark all orders assigned to this driver
-                            pass
+                        today = date.today().strftime('%Y-%m-%d')
+                        all_orders = db.get_orders(date=today)
                         
-                        st.success(f"✅ Sent to {driver_name}! Status updated.")
+                        # Match stops to order_ids by address
+                        for stop in stops:
+                            stop_address = stop.get('address', '').lower().strip()
+                            
+                            # Find matching order
+                            for order in all_orders:
+                                order_address = order.get('address', '').lower().strip()
+                                
+                                # Simple match by address
+                                if stop_address in order_address or order_address in stop_address:
+                                    order_id = order.get('order_id')
+                                    if order_id:
+                                        # Update status
+                                        db.update_order_status(order_id, 'sent_to_driver')
+                                        updated_count += 1
+                                        break
+                        
+                        # Open WhatsApp
+                        st.markdown(f'<meta http-equiv="refresh" content="0; url={whatsapp_url}">', unsafe_allow_html=True)
+                        
+                        if updated_count > 0:
+                            st.success(f"✅ Sent to {driver_name}! Updated {updated_count} orders to 'Sent to Driver' status.")
+                        else:
+                            st.success(f"✅ Sent to {driver_name}!")
+                            st.info("💡 Tip: Save routes to database first to enable automatic status tracking.")
+                        
+                        # Also provide the link
+                        st.markdown(f"[📲 Click here if WhatsApp didn't open]({whatsapp_url})")
                         
                     except Exception as e:
-                        st.warning(f"Sent but couldn't update status: {str(e)}")
+                        # Still send even if status update fails
+                        st.warning(f"Sent but couldn't auto-update status: {str(e)}")
+                        st.markdown(f"[📲 Click here to send via WhatsApp]({whatsapp_url})")
             
             with col2:
-                # Copy to clipboard button (using st.code)
+                # Copy to clipboard button
                 if st.button("📋 Copy Message", key=f"copy_{driver_name}", use_container_width=True):
                     st.code(whatsapp_message, language=None)
                     st.success("Message displayed above - copy manually")
