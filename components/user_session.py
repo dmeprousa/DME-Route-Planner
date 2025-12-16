@@ -425,12 +425,14 @@ class UserSession:
         """Auto-save critical session data to browser localStorage simulation"""
         try:
             if UserSession.is_logged_in():
-                # Save minimal critical state
+                # Save critical state including ORDERS
                 critical_state = {
                     'current_user': st.session_state.get('current_user'),
                     'user_name': st.session_state.get('user_name'),
                     'user_role': st.session_state.get('user_role'),
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': datetime.now().isoformat(),
+                    'orders': st.session_state.get('orders', []),
+                    'selected_drivers': st.session_state.get('selected_drivers', [])
                 }
                 
                 # Save to file (simple persistence)
@@ -447,7 +449,7 @@ class UserSession:
         """Try to restore session from cache if lost"""
         try:
             # If session is lost, try to restore
-            if not UserSession.is_logged_in():
+            if not UserSession.is_logged_in() or not st.session_state.get('orders'):
                 # Check all possible cached sessions
                 
                 cache_files = glob.glob(".session_cache_*.json")
@@ -463,10 +465,18 @@ class UserSession:
                     cached_time = datetime.fromisoformat(cached_state['timestamp'])
                     if (datetime.now() - cached_time).total_seconds() < 28800:  # 8 hours
                         # Restore session
-                        st.session_state.current_user = cached_state['current_user']
-                        st.session_state.user_name = cached_state['user_name']
-                        st.session_state.user_role = cached_state['user_role']
+                        if not UserSession.is_logged_in():
+                            st.session_state.current_user = cached_state.get('current_user')
+                            st.session_state.user_name = cached_state.get('user_name')
+                            st.session_state.user_role = cached_state.get('user_role')
                         
+                        # Restore DATA if missing
+                        if not st.session_state.get('orders') and 'orders' in cached_state:
+                            st.session_state.orders = cached_state['orders']
+                            
+                        if not st.session_state.get('selected_drivers') and 'selected_drivers' in cached_state:
+                             st.session_state.selected_drivers = cached_state['selected_drivers']
+
                         # Silent restoration - user won't notice
                         
         except Exception:

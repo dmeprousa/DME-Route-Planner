@@ -112,12 +112,44 @@ if total_orders > 0:
             if col not in df_display.columns:
                 df_display[col] = "" # Fill missing columns
                 
-        # Show last 5
-        st.dataframe(
-            df_display[columns_to_show].tail(5),
+        # Show interactive table (Editable Status)
+        # We need to reverse the dataframe to show NEWEST first, not just tail
+        df_reversed = df_display.iloc[::-1].head(10) # Last 10 reversed
+        
+        edited_dashboard_df = st.data_editor(
+            df_reversed[columns_to_show],
+            column_config={
+                "status": st.column_config.SelectboxColumn(
+                    "Status",
+                    options=["pending", "delivered", "failed", "archived"],
+                    required=True
+                )
+            },
+            disabled=[c for c in columns_to_show if c != "status"],
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
+            key="dashboard_status_editor"
         )
+        
+        # Sync changes back to main session state
+        # Since we displayed reversed data, we need to map back to original indices carefully
+        # But a simpler way: iterate and find changes by value if indices match
+        # Actually, data_editor returns a new DF. Let's match by index if we kept it, but we hid it.
+        # Better approach: Just Check if status changed in the edited slice
+        
+        if edited_dashboard_df is not None:
+             # Map the changes back to the original st.session_state.orders
+             # The index in edited_dashboard_df corresponds to the index in df_display (if we didn't reset index)
+             
+             for idx, row in edited_dashboard_df.iterrows():
+                 # Update the original order in session state
+                 # idx is the original index from df_display which matches session_state.orders
+                 if idx < len(st.session_state.orders):
+                     if st.session_state.orders[idx].get('status') != row['status']:
+                         st.session_state.orders[idx]['status'] = row['status']
+                         # Trigger auto-save immediately to prevent data loss
+                         UserSession._auto_save_session()
+                         st.rerun() # Refresh to update metrics instantly
 
     st.divider()
 
