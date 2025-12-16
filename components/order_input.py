@@ -4,6 +4,8 @@ Order Input Component - Parse and validate orders from multiple sources
 
 import google.generativeai as genai
 import pandas as pd
+from PIL import Image
+import io
 import os
 from typing import List, Dict
 
@@ -117,6 +119,61 @@ Return ONLY the JSON array, no other text.
             
         except Exception as e:
             raise Exception(f"Failed to parse file: {str(e)}")
+
+    def parse_image(self, uploaded_file) -> List[Dict]:
+        """Parse order data from an image using Gemini Vision"""
+        if not self.model:
+            raise ValueError("GEMINI_API_KEY not configured")
+            
+        try:
+            # Open the image using Pillow
+            image = Image.open(uploaded_file)
+            
+            prompt = """
+            Look at this image containing delivery or pickup orders.
+            Extract all order details into a structured JSON format.
+            
+            Return a JSON array of orders with this logic:
+            - If multiple orders are visible, extract all of them.
+            - If a field is missing, use an empty string "".
+            - infer 'order_type' as 'Delivery' unless 'Pickup' or 'Exchange' is mentioned.
+            
+            JSON Structure:
+            [
+              {
+                "order_type": "Delivery" or "Pickup",
+                "customer_name": "name",
+                "customer_phone": "phone or empty",
+                "address": "street address",
+                "city": "city",
+                "zip_code": "zip code",
+                "items": "equipment items listed",
+                "time_window_start": "HH:MM AM/PM",
+                "time_window_end": "HH:MM AM/PM",
+                "special_notes": "notes"
+              }
+            ]
+            
+            Return ONLY the valid JSON array. No markdown code blocks, no extra text.
+            """
+            
+            # Send both prompt and image to the model
+            response = self.model.generate_content([prompt, image])
+            result_text = response.text.strip()
+            
+            # Clean JSON markers (Gemini loves markdown)
+            if '```json' in result_text:
+                result_text = result_text.split('```json')[1].split('```')[0]
+            elif '```' in result_text:
+                result_text = result_text.split('```')[1].split('```')[0]
+            
+            import json
+            orders = json.loads(result_text.strip())
+            return orders
+            
+        except Exception as e:
+            # Fallback logic could be added here similar to parse_text if needed
+            raise Exception(f"Failed to parse image: {str(e)}")
     
     def validate_order(self, order: Dict) -> tuple[bool, str]:
         """Validate a single order"""

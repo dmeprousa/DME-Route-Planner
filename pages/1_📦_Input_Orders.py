@@ -33,7 +33,8 @@ st.metric("Orders Loaded", len(st.session_state.orders))
 st.divider()
 
 # Input method tabs
-tab1, tab2, tab3 = st.tabs(["📝 Paste Text", "📄 Upload File", "✍️ Manual Entry"])
+# Input method tabs
+tab1, tab2, tab_img, tab3 = st.tabs(["📝 Paste Text", "📄 Upload File", "📸 Upload Image", "✍️ Manual Entry"])
 
 with tab1:
     st.subheader("Paste Order Text")
@@ -117,7 +118,54 @@ with tab2:
                 st.rerun()
                 
         except Exception as e:
+        except Exception as e:
             st.error(f"Error reading file: {str(e)}")
+
+with tab_img:
+    st.subheader("Upload Order Image")
+    st.write("Upload a screenshot or photo of the order (e.g. from email or fax)")
+    
+    uploaded_image = st.file_uploader(
+        "Choose image",
+        type=['png', 'jpg', 'jpeg', 'webp'],
+        key="img_uploader",
+        help="Upload an image containing order details"
+    )
+    
+    if uploaded_image:
+        col_preview, col_action = st.columns([1, 2])
+        with col_preview:
+            st.image(uploaded_image, caption="Preview", width=200)
+            
+        with col_action:
+            if st.button("🤖 Parse Image with AI", type="primary"):
+                try:
+                    with st.spinner("Analyzing image... (This relies on Gemini Vision)"):
+                        parser = OrderInput()
+                        parsed_orders = parser.parse_image(uploaded_image)
+                        
+                        # Validation & Adding
+                        added = 0
+                        errors = []
+                        for order in parsed_orders:
+                            is_valid, msg = validate_order(order)
+                            if is_valid:
+                                st.session_state.orders.append(order)
+                                added += 1
+                            else:
+                                errors.append(f"Invalid in image: {msg}")
+                        
+                        if added > 0:
+                            st.success(f"✅ Extracted {added} orders from image!")
+                            st.balloons()
+                            st.rerun()
+                        
+                        if errors:
+                            for err in errors:
+                                st.warning(err)
+                                
+                except Exception as e:
+                    st.error(f"Error parsing image: {str(e)}")
 
 with tab3:
     st.subheader("Manual Order Entry")
