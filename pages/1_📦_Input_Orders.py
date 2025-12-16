@@ -374,6 +374,14 @@ if st.session_state.orders:
     if 'status' not in df.columns:
         df['status'] = 'pending'
     df['status'] = df['status'].fillna('pending')
+
+    # Ensure other essential columns exist to prevent display errors
+    essential_cols = ['customer', 'phone', 'time_window', 'notes', 'order_type', 'zip_code', 'city', 'items', 'address']
+    for col in essential_cols:
+        if col not in df.columns:
+            df[col] = ""
+        # Clean up 'nan' or None values
+        df[col] = df[col].replace('nan', '').fillna('')
     
     # Add 'Select' column for checkboxes
     if 'selected_rows' not in st.session_state:
