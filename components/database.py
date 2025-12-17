@@ -169,7 +169,8 @@ class Database:
                     datetime.now().isoformat(),
                     # Add coordinates if available
                     order.get('coordinates', {}).get('lat', ''),
-                    order.get('coordinates', {}).get('lng', '')
+                    order.get('coordinates', {}).get('lng', ''),
+                    order.get('parsed_at', '')
                 ]
                 
                 ws.append_row(row)

@@ -22,6 +22,8 @@ def update_headers():
             new_headers.append('lat')
         if 'lng' not in headers:
             new_headers.append('lng')
+        if 'parsed_at' not in headers:
+            new_headers.append('parsed_at')
             
         if new_headers:
             print(f"Adding new headers: {new_headers}")

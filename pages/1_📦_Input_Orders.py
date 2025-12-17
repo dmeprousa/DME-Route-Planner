@@ -126,6 +126,8 @@ if selected_method == "📝 Paste Text":
                             if is_valid:
                                 # Add date to order
                                 order['date'] = today.strftime('%Y-%m-%d')
+                                from datetime import datetime
+                                order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                                 order['status'] = 'pending'
                                 st.session_state.orders.append(order)
                                 added += 1
@@ -192,6 +194,8 @@ elif selected_method == "📄 Upload File":
                     if is_valid:
                         # Add date to order
                         order['date'] = today.strftime('%Y-%m-%d')
+                        from datetime import datetime
+                        order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         order['status'] = 'pending'
                         st.session_state.orders.append(order)
                         added += 1
@@ -259,6 +263,8 @@ elif selected_method == "📸 Upload Image":
                             if is_valid:
                                 # Add date to order
                                 order['date'] = today.strftime('%Y-%m-%d')
+                                from datetime import datetime
+                                order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                                 order['status'] = 'pending'
                                 st.session_state.orders.append(order)
                                 added += 1
@@ -333,6 +339,8 @@ elif selected_method == "✍️ Manual Entry":
             if is_valid:
                 # Add date to order
                 order['date'] = today.strftime('%Y-%m-%d')
+                from datetime import datetime
+                order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 order['status'] = 'pending'
                 st.session_state.orders.append(order)
                 
