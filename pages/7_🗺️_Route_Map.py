@@ -109,9 +109,17 @@ Fullscreen().add_to(m)
 
 # Group by Driver
 if 'assigned_driver' in df.columns:
-    drivers = df['assigned_driver'].unique()
+    drivers = [d for d in df['assigned_driver'].unique() if d]
 else:
     drivers = []
+
+selected_driver_filter = None
+
+if view_mode == "Single Driver":
+    if drivers:
+        selected_driver_filter = st.selectbox("Select Driver", drivers)
+    else:
+        st.info("No drivers found for this date.")
 
 # Define colors for drivers
 colors = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'lightred', 'beige', 'darkblue', 'darkgreen', 'cadetblue', 'darkpurple', 'white', 'pink', 'lightblue', 'lightgreen', 'gray', 'black', 'lightgray']
@@ -120,16 +128,18 @@ for i, driver in enumerate(drivers):
     if not driver:
         continue
         
-    if view_mode == "Single Driver":
-        selected_driver = st.selectbox("Select Driver", [d for d in drivers if d])
-        if driver != selected_driver:
-            continue
+    # Apply Filter
+    if selected_driver_filter and driver != selected_driver_filter:
+        continue
             
     driver_color = colors[i % len(colors)]
     
     # Get driver orders
     driver_orders = [o for o in valid_orders if o.get('assigned_driver') == driver]
     
+    if not driver_orders:
+        continue
+
     # Sort by stop number
     try:
         driver_orders.sort(key=lambda x: int(x.get('stop_number', 0)) if x.get('stop_number') else 999)
