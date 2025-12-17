@@ -434,6 +434,13 @@ if st.session_state.orders:
                 options=["Unassigned"] + st.session_state.get('selected_drivers', []),
                 required=False
             ),
+            # NEW: Parsing Time
+            "parsed_at": st.column_config.DatetimeColumn(
+                "🕒 Parsed At",
+                help="Time when order was added",
+                format="D MMM, h:mm a",
+                width="medium" 
+            ),
             # Hide technical columns
             "username": None,
             "added_at": None,
@@ -444,7 +451,7 @@ if st.session_state.orders:
             "order_id": None
         },
         column_order=[
-            "Selected", "status", "assigned_driver", "order_type", 
+            "Selected", "status", "assigned_driver", "parsed_at", "order_type", 
             "customer", "phone", "address", "city", "zip_code", 
             "items", "time_window", "notes"
         ],
