@@ -7,9 +7,9 @@
 
 ## 📋 Required Tabs (يجب إنشاء 3 أوراق بالضبط)
 
-### 1️⃣ ORDERS (19 columns)
+### 1️⃣ ORDERS (21 columns)
 ```
-order_id | date | created_at | status | order_type | customer_name | customer_phone | address | city | zip_code | items | time_window_start | time_window_end | special_notes | assigned_driver | route_id | stop_number | eta | updated_at
+order_id | date | created_at | status | order_type | customer_name | customer_phone | address | city | zip_code | items | time_window_start | time_window_end | special_notes | assigned_driver | route_id | stop_number | eta | updated_at | lat | lng
 ```
 
 ### 2️⃣ ROUTES (11 columns)

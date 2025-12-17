@@ -42,7 +42,19 @@ class AIOptimizer:
             elif '```' in result_text:
                 result_text = result_text.split('```')[1].split('```')[0]
             
-            result = json.loads(result_text.strip())
+            result_text = result_text.strip()
+            # Handle potential double encoding or plain string response
+            try:
+                result = json.loads(result_text)
+                if isinstance(result, str):
+                    # Try parsing again if it's a double-encoded string
+                    result = json.loads(result)
+            except json.JSONDecodeError:
+                raise Exception(f"Failed to parse JSON response: {result_text[:100]}...")
+            
+            if not isinstance(result, dict):
+                raise Exception(f"AI returned {type(result)} instead of dict: {result}")
+
             return result
             
         except Exception as e:
@@ -59,7 +71,16 @@ class AIOptimizer:
                         result_text = result_text.split('```json')[1].split('```')[0]
                     elif '```' in result_text:
                         result_text = result_text.split('```')[1].split('```')[0]
-                    return json.loads(result_text.strip())
+                    
+                    result_text = result_text.strip()
+                    result = json.loads(result_text)
+                    if isinstance(result, str):
+                        result = json.loads(result)
+                        
+                    if not isinstance(result, dict):
+                         raise Exception(f"Fallback AI returned {type(result)} instead of dict")
+                         
+                    return result
                 except Exception as fb_error:
                     raise Exception(f"Fallback optimization failed: {str(fb_error)}")
                     
@@ -124,6 +145,10 @@ RETURN THIS EXACT JSON FORMAT:
           "drive_time_from_previous_min": 0,
           "stop_duration_min": 45,
           "time_window_ok": true,
+          "coordinates": {{
+            "lat": 34.0522,
+            "lng": -118.2437
+          }},
           "special_notes": "notes if any"
         }}
       ],

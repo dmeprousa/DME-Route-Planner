@@ -165,7 +165,11 @@ class Database:
                     order.get('route_id', ''),
                     order.get('stop_number', ''),
                     order.get('eta', ''),
-                    datetime.now().isoformat()
+                    order.get('eta', ''),
+                    datetime.now().isoformat(),
+                    # Add coordinates if available
+                    order.get('coordinates', {}).get('lat', ''),
+                    order.get('coordinates', {}).get('lng', '')
                 ]
                 
                 ws.append_row(row)

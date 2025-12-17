@@ -23,3 +23,7 @@ requests==2.31.0
 
 # Image Processing
 Pillow>=10.0.0
+
+# Mapping
+folium>=0.14.0
+streamlit-folium>=0.15.0
