@@ -151,18 +151,8 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                 st.warning(f"⚠️ Routes generated but couldn't auto-save: {str(save_error)}")
                 st.info("💡 Use 'Save Routes to Database' button below to save manually")
             
-            # Show warnings
-            if warnings:
-                with st.expander("⚠️ Warnings", expanded=True):
-                    for warning in warnings:
-                        st.warning(warning)
-            
-            # Show unassigned
-            if unassigned:
-                with st.expander("❌ Unassigned Orders", expanded=True):
-                    st.error(f"{len(unassigned)} orders could not be assigned:")
-                    for order in unassigned:
-                        st.write(f"- {order}")
+            # Save unassigned to session for persistence
+            st.session_state.unassigned_orders = unassigned
             
             st.rerun()
             
@@ -222,6 +212,89 @@ if st.session_state.optimized_routes:
                     st.link_button("🗺️ Navigate", nav_url, use_container_width=True)
                 
                 st.divider()
+    
+    # Show unassigned with FORCE ADD option (MOVED HERE to persist)
+    if 'unassigned_orders' in st.session_state and st.session_state.unassigned_orders:
+        st.divider()
+        st.subheader("❌ Unassigned Orders")
+        st.warning(f"{len(st.session_state.unassigned_orders)} orders could not be auto-assigned. You can manually force-add them below.")
+        
+        # Create a copy to iterate safely while modifying
+        unassigned_copy = list(st.session_state.unassigned_orders)
+        
+        for i, order in enumerate(unassigned_copy):
+            # Unique key based on index or content
+            key_suffix = f"{i}_{len(unassigned_copy)}" 
+            
+            with st.expander(f"⚠️ Unassigned Order #{i+1}", expanded=True):
+                # Handle if order is string or dict
+                if isinstance(order, str):
+                    st.write(order)
+                    order_details = order
+                else:
+                    st.json(order)
+                    order_details = str(order)
+                    
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    target_driver = st.selectbox(
+                        "Assign to Driver",
+                        options=[d['driver_name'] for d in st.session_state.selected_drivers],
+                        key=f"force_driver_{key_suffix}"
+                    )
+                
+                with col2:
+                    if st.button("➕ Force Add to Route", key=f"force_btn_{key_suffix}"):
+                        # Logic to add to optimized_routes
+                        if target_driver in st.session_state.optimized_routes:
+                            # Create a new stop object
+                            new_stop = {
+                                "stop_number": 999,
+                                "order_id": "MANUAL",
+                                "order_type": "Manual Add",
+                                "address": order_details,
+                                "city": "Unknown",
+                                "items": "Manually Added",
+                                "time_window": "Manual",
+                                "eta": "Manual",
+                                "special_notes": "⚠️ Manually added by dispatcher"
+                            }
+                            
+                            # If order was a dict, try to get better data
+                            if isinstance(order, dict):
+                                new_stop.update({
+                                    "order_id": order.get('order_id', 'MANUAL'),
+                                    "address": order.get('address', 'Unknown Address'),
+                                    "city": order.get('city', ''),
+                                    "items": order.get('items', ''),
+                                    "time_window": order.get('time_window', ''),
+                                })
+                            
+                            # Append to stops
+                            driver_route = st.session_state.optimized_routes[target_driver]
+                            if 'stops' not in driver_route:
+                                driver_route['stops'] = []
+                            
+                            # Fix stop number
+                            new_stop['stop_number'] = len(driver_route['stops']) + 1
+                            driver_route['stops'].append(new_stop)
+                            
+                            # Update summary
+                            if 'summary' not in driver_route:
+                                driver_route['summary'] = {}
+                            driver_route['summary']['total_stops'] = len(driver_route['stops'])
+                            
+                            # Remove from session unassigned list
+                            st.session_state.unassigned_orders.pop(i)
+                            
+                            # Trigger session save logic
+                            from components.user_session import UserSession
+                            UserSession._auto_save_session()
+                            
+                            st.success(f"Added to {target_driver}'s route!")
+                            st.rerun()
+                        else:
+                            st.error("Driver route not found.")
     
     # Save and continue
     st.divider()

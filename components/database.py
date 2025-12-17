@@ -210,7 +210,41 @@ class Database:
         """Query orders"""
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
-            records = ws.get_all_records()
+            
+            # Use get_all_values to handle duplicate/empty headers manually
+            # get_all_records() fails if there are empty or duplicate header cols
+            all_values = ws.get_all_values()
+            
+            if not all_values:
+                return []
+                
+            headers = all_values[0]
+            rows = all_values[1:]
+            
+            # Create unique headers for mapping
+            unique_headers = []
+            seen_count = {}
+            for h in headers:
+                key = str(h).strip()
+                if not key:
+                    key = "Unknown"
+                
+                if key in seen_count:
+                    seen_count[key] += 1
+                    key = f"{key}_{seen_count[key]}"
+                else:
+                    seen_count[key] = 0
+                unique_headers.append(key)
+            
+            records = []
+            for row in rows:
+                # Ensure row is same length as headers
+                if len(row) < len(unique_headers):
+                    row = row + [''] * (len(unique_headers) - len(row))
+                elif len(row) > len(unique_headers):
+                    row = row[:len(unique_headers)]
+                    
+                records.append(dict(zip(unique_headers, row)))
             
             if date:
                 records = [r for r in records if r.get('date') == date]
