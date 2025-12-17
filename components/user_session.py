@@ -333,6 +333,14 @@ class UserSession:
             username = st.session_state.current_user
             UserSession.log_session_end(username)
             
+            # Delete session cache to prevent auto-login
+            try:
+                cache_file = f".session_cache_{username}.json"
+                if os.path.exists(cache_file):
+                    os.remove(cache_file)
+            except Exception:
+                pass
+            
             # Clear user session
             st.session_state.current_user = None
             st.session_state.user_name = None
