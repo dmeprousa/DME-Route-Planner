@@ -121,8 +121,10 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
             st.success("✅ Routes optimized successfully!")
             
             # UPDATE Assigned Driver in Session State automatically
-            for driver_name, orders in st.session_state.optimized_routes.items():
-                for route_order in orders:
+            for driver_name, route_data in st.session_state.optimized_routes.items():
+                # route_data is a dict containing 'stops' and 'summary'
+                stops = route_data.get('stops', [])
+                for route_order in stops:
                     # Find matching order in session to update driver
                     for session_order in st.session_state.orders:
                         # Match by address (and customer if possible) to be safe
