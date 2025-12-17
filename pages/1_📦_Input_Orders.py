@@ -410,7 +410,7 @@ if st.session_state.orders:
                 width="medium",
                 options=[
                     "pending",
-                    # "sent_to_driver", # Removed to prevent logic error (no driver assigned yet)
+                    "sent_to_driver",
                     "delivered",
                     "failed",
                     "archived"
@@ -457,6 +457,12 @@ if st.session_state.orders:
             # Sync assigned driver manual changes
             if st.session_state.orders[index].get('assigned_driver') != row['assigned_driver']:
                  st.session_state.orders[index]['assigned_driver'] = row['assigned_driver']
+                 
+                 # Auto-update status if driver is assigned
+                 driver_val = row['assigned_driver']
+                 if driver_val and driver_val not in ["Unassigned", "None", ""]:
+                     st.session_state.orders[index]['status'] = 'sent_to_driver'
+                     st.rerun()
 
     col1, col2, col3 = st.columns([1, 1, 1])
     

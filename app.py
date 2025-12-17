@@ -121,7 +121,7 @@ if total_orders > 0:
             column_config={
                 "status": st.column_config.SelectboxColumn(
                     "Status",
-                    options=["pending", "delivered", "failed", "archived"],
+                    options=["pending", "sent_to_driver", "delivered", "failed", "archived"],
                     required=True
                 ),
                 "assigned_driver": st.column_config.SelectboxColumn(
@@ -169,6 +169,11 @@ if total_orders > 0:
                      # Sync Assigned Driver
                      if st.session_state.orders[idx].get('assigned_driver') != row['assigned_driver']:
                          st.session_state.orders[idx]['assigned_driver'] = row['assigned_driver']
+                         
+                         # Auto-update status
+                         if row['assigned_driver'] and row['assigned_driver'] not in ["Unassigned", "None", ""]:
+                             st.session_state.orders[idx]['status'] = 'sent_to_driver'
+                             
                          UserSession._auto_save_session()
                          
                          # Sync to Cloud DB
