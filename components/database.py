@@ -144,10 +144,24 @@ class Database:
             raise Exception(f"Error adding driver: {str(e)}")
     
     def save_orders(self, orders: List[Dict], date: str) -> None:
-        """Save orders to ORDERS sheet"""
+        """Save orders to ORDERS sheet - replaces existing orders for this date"""
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
             
+            # IMPORTANT: Delete existing rows for this date first to avoid duplicates
+            all_values = ws.get_all_values()
+            if len(all_values) > 1:  # Has header + data
+                # Find rows with matching date (date is in column B, index 1)
+                rows_to_delete = []
+                for idx, row in enumerate(all_values[1:], start=2):  # Start from row 2 (skip header)
+                    if len(row) > 1 and row[1] == date:  # Column B is date
+                        rows_to_delete.append(idx)
+                
+                # Delete in reverse order to avoid index shifting
+                for row_idx in reversed(rows_to_delete):
+                    ws.delete_rows(row_idx)
+            
+            # Now append new orders
             for i, order in enumerate(orders):
                 order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
                 
