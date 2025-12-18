@@ -541,7 +541,7 @@ if st.session_state.orders:
                                     os.remove(cache_file)
                             
                             # Force reload from ORDERS sheet (not PENDING_ORDERS!)
-                            fresh_orders = db.get_orders(date=date_str, status='')  # Get all statuses
+                            fresh_orders = db.get_orders(date=date_str, status=None)  # Get all statuses
                             st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
@@ -589,7 +589,7 @@ if st.session_state.orders:
                                     os.remove(cache_file)
                             
                             # Force reload from ORDERS sheet (should be empty now)
-                            fresh_orders = db.get_orders(date=date_str, status='')
+                            fresh_orders = db.get_orders(date=date_str, status=None)
                             st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ All orders cleared and synced!", icon="☁️")
