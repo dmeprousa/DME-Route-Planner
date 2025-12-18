@@ -540,15 +540,15 @@ if st.session_state.orders:
                                 if os.path.exists(cache_file):
                                     os.remove(cache_file)
                             
-                            # Force reload from database to ensure consistency
-                            if current_user and sheets.spreadsheet:
-                                pending = sheets.load_pending_orders(current_user)
-                                today_str = today.strftime('%Y-%m-%d')
-                                st.session_state.orders = [o for o in pending if o.get('date', today_str) == today_str]
+                            # Force reload from ORDERS sheet (not PENDING_ORDERS!)
+                            fresh_orders = db.get_orders(date=date_str, status='')  # Get all statuses
+                            st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
                         except Exception as e:
-                            st.warning(f"Orders deleted locally, but cloud sync failed: {str(e)}")
+                            st.error(f"Delete failed: {str(e)}")
+                            import traceback
+                            st.code(traceback.format_exc())
                         
                         st.session_state.confirming_delete = False  # Reset
                         st.session_state.pending_delete_indices = []  # Clear
@@ -588,15 +588,15 @@ if st.session_state.orders:
                                 if os.path.exists(cache_file):
                                     os.remove(cache_file)
                             
-                            # Force reload from database to ensure consistency
-                            if current_user and sheets.spreadsheet:
-                                pending = sheets.load_pending_orders(current_user)
-                                today_str = today.strftime('%Y-%m-%d')
-                                st.session_state.orders = [o for o in pending if o.get('date', today_str) == today_str]
+                            # Force reload from ORDERS sheet (should be empty now)
+                            fresh_orders = db.get_orders(date=date_str, status='')
+                            st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ All orders cleared and synced!", icon="☁️")
                         except Exception as e:
-                            st.warning(f"Orders cleared locally, but cloud sync failed: {str(e)}")
+                            st.error(f"Clear failed: {str(e)}")
+                            import traceback
+                            st.code(traceback.format_exc())
                         
                         st.session_state.confirming_clear = False
                         st.success("🆑 All orders cleared!")
