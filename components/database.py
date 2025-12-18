@@ -23,39 +23,46 @@ class Database:
         creds = None
         
         # 1. Try Service Account from Streamlit Secrets (Best for Cloud)
-        if "gcp_service_account" in st.secrets:
-            try:
-                # Check if it's a dict or a string (sometimes people paste JSON as string)
-                if isinstance(st.secrets["gcp_service_account"], str):
-                    import json
-                    service_account_info = json.loads(st.secrets["gcp_service_account"])
-                else:
-                    service_account_info = st.secrets["gcp_service_account"]
-                
-                creds = service_account.Credentials.from_service_account_info(
-                    service_account_info, scopes=SCOPES
-                )
-            except Exception as e:
-                st.error(f"⚠️ Error reading 'gcp_service_account' from secrets: {str(e)}")
+        try:
+            if "gcp_service_account" in st.secrets:
+                try:
+                    # Check if it's a dict or a string (sometimes people paste JSON as string)
+                    if isinstance(st.secrets["gcp_service_account"], str):
+                        import json
+                        service_account_info = json.loads(st.secrets["gcp_service_account"])
+                    else:
+                        service_account_info = st.secrets["gcp_service_account"]
+                    
+                    creds = service_account.Credentials.from_service_account_info(
+                        service_account_info, scopes=SCOPES
+                    )
+                except Exception as e:
+                    st.error(f"⚠️ Error reading 'gcp_service_account' from secrets: {str(e)}")
+        except:
+            # Secrets file doesn't exist, will try local auth
+            pass
 
         # 2. Try OAuth Refresh Token from Streamlit Secrets (Alternative for Personal Accounts)
-        if not creds and "gcp_oauth" in st.secrets:
-            try:
-                oauth_info = st.secrets["gcp_oauth"]
-                creds = Credentials(
-                    token=oauth_info.get("token"),
-                    refresh_token=oauth_info.get("refresh_token"),
-                    token_uri=oauth_info.get("token_uri"),
-                    client_id=oauth_info.get("client_id"),
-                    client_secret=oauth_info.get("client_secret"),
-                    scopes=SCOPES
-                )
-            except Exception as e:
-                 st.error(f"⚠️ Error reading 'gcp_oauth' from secrets: {str(e)}")
+        try:
+            if not creds and "gcp_oauth" in st.secrets:
+                try:
+                    oauth_info = st.secrets["gcp_oauth"]
+                    creds = Credentials(
+                        token=oauth_info.get("token"),
+                        refresh_token=oauth_info.get("refresh_token"),
+                        token_uri=oauth_info.get("token_uri"),
+                        client_id=oauth_info.get("client_id"),
+                        client_secret=oauth_info.get("client_secret"),
+                        scopes=SCOPES
+                    )
+                except Exception as e:
+                     st.error(f"⚠️ Error reading 'gcp_oauth' from secrets: {str(e)}")
+        except:
+            # Secrets file doesn't exist, will try local auth
+            pass
         
         # 3. Try Local OAuth (Best for Local Development)
         if not creds:
-             # ... (Rest of existing local code) ...
             if os.path.exists('token.pickle'):
                 with open('token.pickle', 'rb') as token:
                     creds = pickle.load(token)
@@ -70,6 +77,7 @@ class Database:
                     with open('token.pickle', 'wb') as token:
                         pickle.dump(creds, token)
         
+        
         if not creds:
             raise Exception("Could not authenticate. Check secrets or credentials.json")
             
@@ -77,9 +85,14 @@ class Database:
         self.client = gspread.authorize(creds)
         
         # Get Sheet ID from Secrets or Env
-        if "GOOGLE_SHEET_ID" in st.secrets:
-            sheet_id = st.secrets["GOOGLE_SHEET_ID"]
-        else:
+        sheet_id = None
+        try:
+            if "GOOGLE_SHEET_ID" in st.secrets:
+                sheet_id = st.secrets["GOOGLE_SHEET_ID"]
+        except:
+            pass
+        
+        if not sheet_id:
             sheet_id = os.getenv('GOOGLE_SHEET_ID', '1mwSH2hFmggSjxBnkqbIZARylMd_3fXtrF2M0pTgrJe0')
             
         self.spreadsheet = self.client.open_by_key(sheet_id)
