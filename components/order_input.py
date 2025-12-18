@@ -34,17 +34,24 @@ TEXT:
 Return a JSON array of orders with this EXACT structure (use these specific keys):
 [
   {{
-    "order_type": "Delivery" or "Pickup",
-    "customer": "Full Name (look for capitalized names)",
-    "phone": "Phone Number (extract any 10-digit number format)",
-    "address": "Street Address",
+    "order_type": "Delivery" or "Pickup" or "Exchange",
+    "customer_name": "Full Name (look for names after 'to' or 'for', use proper capitalization)",
+    "customer_phone": "Phone Number (extract any 10-digit number, format: xxx-xxx-xxxx)",
+    "address": "Street Address (number and street name)",
     "city": "City Name",
-    "zip_code": "Zip Code",
-    "items": "Comma separated equipment list",
-    "time_window": "Single string e.g. '10am-2pm' (combine start/end)",
-    "notes": "Any special instructions or gate codes"
+    "zip_code": "Zip Code (5 digits)",
+    "items": "Comma separated equipment list (e.g., Hospital Bed, Oxygen Concentrator)",
+    "time_window": "Single string combining start and end time (e.g., '10:00 AM - 2:00 PM')",
+    "special_notes": "Any special instructions, gate codes, or delivery notes"
   }}
 ]
+
+IMPORTANT:
+- Extract customer name from patterns like "Delivery to [NAME]" or "Pickup for [NAME]"
+- Always include both first and last name when available
+- Format phone as xxx-xxx-xxxx
+- Combine time window start/end into one field
+- If a field is missing, use empty string ""
 
 Return ONLY the JSON array, no other text.
 """
@@ -131,23 +138,23 @@ Return ONLY the JSON array, no other text.
             Look at this image containing delivery or pickup orders.
             Extract all order details into a structured JSON format.
             
-            Return a JSON array of orders with this logic:
+            Return a JSON array of orders with these EXACT field names:
             - If multiple orders are visible, extract all of them.
             - If a field is missing, use an empty string "".
-            - infer 'order_type' as 'Delivery' unless 'Pickup' or 'Exchange' is mentioned.
+            - Infer 'order_type' as 'Delivery' unless 'Pickup' or 'Exchange' is mentioned.
             
             JSON Structure (Use these EXACT keys):
             [
               {
-                "order_type": "Delivery" or "Pickup",
-                "customer": "Full Name",
-                "phone": "Phone Number",
-                "address": "street address",
-                "city": "city",
-                "zip_code": "zip code",
-                "items": "items list comma separated",
-                "time_window": "Single string e.g. '10am-2pm'",
-                "notes": "special instructions"
+                "order_type": "Delivery" or "Pickup" or "Exchange",
+                "customer_name": "Full Customer Name",
+                "customer_phone": "Phone Number (format xxx-xxx-xxxx)",
+                "address": "Street address",
+                "city": "City name",
+                "zip_code": "5-digit zip code",
+                "items": "Items list comma separated",
+                "time_window": "Combined time window (e.g., '10:00 AM - 2:00 PM')",
+                "special_notes": "Special instructions"
               }
             ]
             
