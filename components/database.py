@@ -219,6 +219,20 @@ class Database:
         except Exception as e:
             raise Exception(f"Error saving routes: {str(e)}")
     
+    def get_routes(self, date: Optional[str] = None) -> List[Dict]:
+        """Query routes from ROUTES sheet"""
+        try:
+            ws = self.spreadsheet.worksheet('ROUTES')
+            records = ws.get_all_records()
+            
+            if date:
+                records = [r for r in records if r.get('date') == date]
+            
+            return records
+            
+        except Exception as e:
+            raise Exception(f"Error reading routes: {str(e)}")
+    
     def get_orders(self, date: Optional[str] = None, status: Optional[str] = None) -> List[Dict]:
         """Query orders"""
         try:

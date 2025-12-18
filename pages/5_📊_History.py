@@ -48,7 +48,15 @@ tab1, tab2, tab3 = st.tabs(["🚚 Routes", "📦 Orders", "👥 Drivers"])
 with tab1:
     st.subheader("Route History")
     
-    if search_btn or st.session_state.get('auto_load_history', False):
+    # Auto-load on first visit or when search button is clicked
+    if 'history_loaded' not in st.session_state:
+        st.session_state.history_loaded = False
+    
+    if search_btn:
+        st.session_state.history_loaded = True
+        
+    if st.session_state.history_loaded or not st.session_state.history_loaded:
+        # Always load by default
         try:
             with st.spinner("Loading routes from database..."):
                 db = Database()
@@ -66,10 +74,10 @@ with tab1:
                         mask = (df['date'] >= pd.to_datetime(start_date)) & (df['date'] <= pd.to_datetime(end_date))
                         df = df[mask]
                     
-                    st.success(f"✅ Found {len(df)} routes")
-                    
-                    # Display metrics
                     if len(df) > 0:
+                        st.success(f"✅ Found {len(df)} routes")
+                        
+                        # Display metrics
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
@@ -100,18 +108,17 @@ with tab1:
                     else:
                         st.info("No routes found in selected date range")
                 else:
-                    st.info("No routes in database yet")
+                    st.info("No routes in database yet. Optimize routes to create history.")
                     
         except Exception as e:
             st.error(f"Error loading routes: {str(e)}")
-            st.info("Make sure ROUTES worksheet exists in your Google Sheet")
-    else:
-        st.info("Click 'Search' to load route history")
+            st.info("Make sure you have optimized and saved routes first")
 
 with tab2:
     st.subheader("Order History")
     
-    if search_btn or st.session_state.get('auto_load_history', False):
+    # Auto-load by default
+    if st.session_state.history_loaded or not st.session_state.history_loaded:
         try:
             with st.spinner("Loading orders from database..."):
                 db = Database()
@@ -129,10 +136,10 @@ with tab2:
                         mask = (df['date'] >= pd.to_datetime(start_date)) & (df['date'] <= pd.to_datetime(end_date))
                         df = df[mask]
                     
-                    st.success(f"✅ Found {len(df)} orders")
-                    
-                    # Display metrics
                     if len(df) > 0:
+                        st.success(f"✅ Found {len(df)} orders")
+                        
+                        # Display metrics
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
@@ -245,13 +252,11 @@ with tab2:
                     else:
                         st.info("No orders found in selected date range")
                 else:
-                    st.info("No orders in database yet")
+                    st.info("No orders in database yet. Add orders to create history.")
                     
         except Exception as e:
             st.error(f"Error loading orders: {str(e)}")
-            st.info("Make sure ORDERS worksheet exists in your Google Sheet")
-    else:
-        st.info("Click 'Search' to load order history")
+            st.info("Make sure you have added and saved orders first")
 
 with tab3:
     st.subheader("Driver List")
