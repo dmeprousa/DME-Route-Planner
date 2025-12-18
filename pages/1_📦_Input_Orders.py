@@ -532,6 +532,14 @@ if st.session_state.orders:
                             db = Database()
                             date_str = today.strftime('%Y-%m-%d')
                             db.save_orders(st.session_state.orders, date_str)
+                            
+                            # Force reload from database to ensure consistency
+                            current_user = UserSession.get_current_user()
+                            if current_user and sheets.spreadsheet:
+                                pending = sheets.load_pending_orders(current_user)
+                                today_str = today.strftime('%Y-%m-%d')
+                                st.session_state.orders = [o for o in pending if o.get('date', today_str) == today_str]
+                            
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
                         except Exception as e:
                             st.warning(f"Orders deleted locally, but cloud sync failed: {str(e)}")
@@ -566,6 +574,14 @@ if st.session_state.orders:
                             db = Database()
                             date_str = today.strftime('%Y-%m-%d')
                             db.save_orders(st.session_state.orders, date_str)
+                            
+                            # Force reload from database to ensure consistency
+                            current_user = UserSession.get_current_user()
+                            if current_user and sheets.spreadsheet:
+                                pending = sheets.load_pending_orders(current_user)
+                                today_str = today.strftime('%Y-%m-%d')
+                                st.session_state.orders = [o for o in pending if o.get('date', today_str) == today_str]
+                            
                             st.toast("✅ All orders cleared and synced!", icon="☁️")
                         except Exception as e:
                             st.warning(f"Orders cleared locally, but cloud sync failed: {str(e)}")
