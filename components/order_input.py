@@ -108,17 +108,18 @@ Return ONLY the JSON array, no other text.
             # Normalize column names
             normalized = []
             for order in orders:
-                normalized.append({
-                    'order_type': order.get('order_type', order.get('type', 'Delivery')),
-                    'customer': order.get('customer', order.get('customer_name', order.get('name', ''))),
-                    'phone': order.get('phone', order.get('customer_phone', '')),
+                flattened_order = {
+                    'order_type': order.get('order_type', 'Delivery'),
+                    'customer_name': order.get('customer_name', order.get('customer', order.get('name', ''))),
+                    'customer_phone': order.get('customer_phone', order.get('phone', '')),
                     'address': order.get('address', ''),
                     'city': order.get('city', ''),
-                    'zip_code': str(order.get('zip_code', order.get('zip', ''))),
-                    'items': order.get('items', order.get('equipment', '')),
-                    'time_window': order.get('time_window', f"{order.get('time_window_start', '')} - {order.get('time_window_end', '')}".strip(' - ')),
-                    'notes': order.get('notes', order.get('special_notes', ''))
-                })
+                    'zip_code': str(order.get('zip_code', '')),
+                    'items': order.get('items', ''),
+                    'time_window': order.get('time_window', ''),
+                    'special_notes': order.get('special_notes', order.get('notes', ''))
+                }
+                normalized.append(flattened_order)
             
             return normalized
             

@@ -43,6 +43,18 @@ if 'selected_drivers' not in st.session_state:
 if 'optimized_routes' not in st.session_state:
     st.session_state.optimized_routes = {}
 
+# SYNC: Always load from database to ensure consistency with other pages
+try:
+    from components.database import Database
+    db = Database()
+    today_date = date.today().strftime('%Y-%m-%d')
+    orders = db.get_orders(date=today_date)
+    if orders:
+        # Use database as source of truth
+        st.session_state.orders = orders
+except Exception as e:
+    st.warning(f"Note: Using session data (Offline). Sync error: {str(e)}")
+
 st.title("🚚 Dashboard")
 st.caption("Daily Operations Overview")
 
@@ -52,10 +64,11 @@ st.subheader(f"📅 {today}")
 # --- METRICS SECTION ---
 # Calculate stats from session state orders
 total_orders = len(st.session_state.orders)
-pending = sum(1 for o in st.session_state.orders if o.get('status', 'pending') == 'pending')
-sent = sum(1 for o in st.session_state.orders if o.get('status') == 'sent_to_driver')
-delivered = sum(1 for o in st.session_state.orders if o.get('status') == 'delivered')
-failed = sum(1 for o in st.session_state.orders if o.get('status') == 'failed')
+# Status keys are case-insensitive and must match database
+pending = sum(1 for o in st.session_state.orders if str(o.get('status', 'pending')).lower() == 'pending')
+sent = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() in ['sent_requested', 'sent_to_driver'])
+delivered = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() == 'delivered')
+failed = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() == 'failed')
 
 # Progress Calculation
 progress = 0
@@ -64,8 +77,8 @@ if total_orders > 0:
 
 # Display Metrics
 col1, col2, col3, col4, col5 = st.columns(5)
-col1.metric("📦 Total Orders", total_orders, delta=f"{total_orders} Today")
-col2.metric("⏳ Pending", pending, delta_color="off")
+col1.metric("📦 Total Orders", total_orders)
+col2.metric("⏳ Pending", pending)
 col3.metric("📤 Sent", sent)
 col4.metric("✅ Delivered", delivered)
 col5.metric("❌ Failed", failed)
@@ -106,18 +119,28 @@ if total_orders > 0:
     if st.session_state.orders:
         df_display = pd.DataFrame(st.session_state.orders)
         
-        # Ensure columns exist to prevent KeyError
-        columns_to_show = ['customer', 'assigned_driver', 'address', 'status', 'time_window']
+        # Ensure columns exist to prevent KeyError - Updated for new schema
+        columns_to_show = ['customer_name', 'assigned_driver', 'address', 'status', 'time_window']
+        
         for col in columns_to_show:
             if col not in df_display.columns:
                 df_display[col] = "" # Fill missing columns
-                
+        
+        # Load drivers for dropdown
+        try:
+            from components.database import Database
+            db = Database()
+            all_drivers = db.get_drivers(status='active')
+            driver_options = ["Unassigned"] + [d.get('name') for d in all_drivers if d.get('name')]
+        except:
+            driver_options = ["Unassigned"]
+
         # Show interactive table (Editable Status & Driver)
-        # We need to reverse the dataframe to show NEWEST first, not just tail
-        df_reversed = df_display.iloc[::-1].head(10) # Last 10 reversed
+        # We display last 10 but maintain original indices for sync
+        display_df = df_display[columns_to_show].copy()
         
         edited_dashboard_df = st.data_editor(
-            df_reversed[columns_to_show],
+            display_df.iloc[::-1].head(10), # Show newest first
             column_config={
                 "status": st.column_config.SelectboxColumn(
                     "Status",
@@ -125,12 +148,15 @@ if total_orders > 0:
                     required=True
                 ),
                 "assigned_driver": st.column_config.SelectboxColumn(
-                    "💂 Driver",
-                    options=["Unassigned"] + st.session_state.get('selected_drivers', []),
+                    "🚚 Driver",
+                    options=driver_options,
                     required=False
-                )
+                ),
+                "customer_name": "Customer",
+                "address": "Address",
+                "time_window": "Time Window"
             },
-            disabled=["customer", "address", "time_window"],
+            disabled=["customer_name", "address", "time_window"],
             use_container_width=True,
             hide_index=True,
             key="dashboard_status_editor"

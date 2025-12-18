@@ -105,30 +105,44 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
                         stops = route_data.get('stops', [])
                         updated_count = 0
                         
-                        today = date.today().strftime('%Y-%m-%d')
-                        all_orders = db.get_orders(date=today)
+                        today_str = date.today().strftime('%Y-%m-%d')
+                        # Load orders from session if available, else database
+                        if 'orders' not in st.session_state or not st.session_state.orders:
+                            st.session_state.orders = db.get_orders(date=today_str)
                         
-                        # Match stops to order_ids by address
+                        all_orders = st.session_state.orders
+                        
+                        # Match stops to order_ids in session state
                         for stop in stops:
-                            stop_address = stop.get('address', '').lower().strip()
+                            stop_addr = stop.get('address', '').lower().strip()
+                            stop_cust = stop.get('customer_name', '').lower().strip()
                             
-                            # Find matching order
+                            # Find matching order in session
                             for order in all_orders:
-                                order_address = order.get('address', '').lower().strip()
+                                order_addr = order.get('address', '').lower().strip()
+                                order_cust = order.get('customer_name', '').lower().strip()
                                 
-                                # Simple match by address
-                                if stop_address in order_address or order_address in stop_address:
+                                # Match by address AND customer for reliability
+                                if (stop_addr in order_addr or order_addr in stop_addr) and \
+                                   (stop_cust in order_cust or order_cust in stop_cust):
+                                    
                                     order_id = order.get('order_id')
                                     if order_id:
-                                        # Update status
+                                        # Update Database
                                         db.update_order_status(order_id, 'sent_to_driver')
+                                        # Update Local Session State
+                                        order['status'] = 'sent_to_driver'
+                                        order['assigned_driver'] = driver_name
                                         updated_count += 1
                                         break
                         
                         if updated_count > 0:
                             st.success(f"✅ Updated {updated_count} orders to 'Sent to Driver' status!")
+                            # Save session state cache
+                            from components.user_session import UserSession
+                            UserSession._auto_save_session()
                         else:
-                            st.info("💡 Tip: Save routes to database first to enable status tracking.")
+                            st.info("💡 Tip: Ensure orders are saved to database before marking as sent.")
                         
                         st.rerun()
                         
