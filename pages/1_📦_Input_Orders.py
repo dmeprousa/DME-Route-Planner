@@ -505,20 +505,30 @@ if st.session_state.orders:
             # Initialize confirm state if not exists
             if 'confirming_delete' not in st.session_state:
                 st.session_state.confirming_delete = False
+            
+            # Store selected indices in session state for confirmation
+            if 'pending_delete_indices' not in st.session_state:
+                st.session_state.pending_delete_indices = []
                 
             if st.button(f"🗑️ Delete Selected ({count})", use_container_width=True):
                 st.session_state.confirming_delete = True
+                st.session_state.pending_delete_indices = selected_indices  # Save indices
+                st.rerun()
                 
             if st.session_state.confirming_delete:
-                st.warning(f"⚠️ You are about to delete {count} orders. This cannot be undone!")
+                delete_count = len(st.session_state.pending_delete_indices)
+                st.warning(f"⚠️ You are about to delete {delete_count} orders. This cannot be undone!")
                 col_conf1, col_conf2 = st.columns(2)
                 with col_conf1:
                     if st.button("✅ Yes, Delete", type="primary", key="btn_confirm_del"):
                         # Remove selected orders (reverse order to avoid index shift issues)
-                        for index in sorted(selected_indices, reverse=True):
-                            del st.session_state.orders[index]
-                        st.session_state.confirming_delete = False # Reset
-                        st.success(f"🗑️ Deleted {count} orders.")
+                        for index in sorted(st.session_state.pending_delete_indices, reverse=True):
+                            if index < len(st.session_state.orders):
+                                del st.session_state.orders[index]
+                        
+                        st.session_state.confirming_delete = False  # Reset
+                        st.session_state.pending_delete_indices = []  # Clear
+                        st.success(f"🗑️ Deleted {delete_count} orders.")
                         st.rerun()
                 with col_conf2:
                     if st.button("❌ Cancel", key="btn_cancel_del"):
@@ -531,6 +541,7 @@ if st.session_state.orders:
                 
             if st.button("🗑️ Clear All Orders", use_container_width=True):
                 st.session_state.confirming_clear = True
+                st.rerun()  # Rerun to show confirmation
                 
             if st.session_state.confirming_clear:
                 st.error("⚠️ WARNING: This will delete ALL orders!")
