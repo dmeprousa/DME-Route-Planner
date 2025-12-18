@@ -526,6 +526,16 @@ if st.session_state.orders:
                             if index < len(st.session_state.orders):
                                 del st.session_state.orders[index]
                         
+                        # Sync to Google Sheets after deletion
+                        try:
+                            from components.database import Database
+                            db = Database()
+                            date_str = today.strftime('%Y-%m-%d')
+                            db.save_orders(st.session_state.orders, date_str)
+                            st.toast("✅ Orders deleted and synced to database!", icon="☁️")
+                        except Exception as e:
+                            st.warning(f"Orders deleted locally, but cloud sync failed: {str(e)}")
+                        
                         st.session_state.confirming_delete = False  # Reset
                         st.session_state.pending_delete_indices = []  # Clear
                         st.success(f"🗑️ Deleted {delete_count} orders.")
@@ -549,6 +559,17 @@ if st.session_state.orders:
                 with col_clr1:
                     if st.button("✅ Confirm Clear All", type="primary", key="btn_confirm_clr"):
                         st.session_state.orders = []
+                        
+                        # Sync to Google Sheets (clear all)
+                        try:
+                            from components.database import Database
+                            db = Database()
+                            date_str = today.strftime('%Y-%m-%d')
+                            db.save_orders(st.session_state.orders, date_str)
+                            st.toast("✅ All orders cleared and synced!", icon="☁️")
+                        except Exception as e:
+                            st.warning(f"Orders cleared locally, but cloud sync failed: {str(e)}")
+                        
                         st.session_state.confirming_clear = False
                         st.success("🆑 All orders cleared!")
                         st.rerun()
