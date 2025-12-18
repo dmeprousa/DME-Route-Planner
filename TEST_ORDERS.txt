@@ -1,0 +1,102 @@
+TEST ORDERS FOR ROUTE MAP TESTING
+==================================
+
+Order 1 - URGENT BEFORE NOON
+Delivery to Maria Rodriguez, 562-555-8901
+4521 Atlantic Ave, Long Beach, CA 90807
+Items: Hospital Bed, Bedside Table, Patient Lift
+Time: 8:00 AM - 12:00 PM
+Notes: URGENT - Must arrive before noon. Call 30 min ahead.
+
+Order 2 - URGENT BEFORE NOON
+Delivery to Robert Chen, 626-555-4567
+1245 S San Gabriel Blvd, San Gabriel, CA 91776
+Items: Oxygen Concentrator 5L, Wheelchair
+Time: 9:00 AM - 12:00 PM
+Notes: CRITICAL - Setup and train by noon. Gate code: #5432
+
+Order 3
+Pickup from Patricia Williams, 909-555-2341
+8932 Foothill Blvd, Rancho Cucamonga, CA 91730
+Items: Hospital Bed, Overbed Table
+Time: 10:00 AM - 2:00 PM
+Notes: Equipment in garage. Son will assist.
+
+Order 4
+Exchange for James Thompson, 951-555-7788
+24567 Alessandro Blvd, Moreno Valley, CA 92553
+Items: Oxygen Concentrator
+Time: 11:00 AM - 3:00 PM
+Notes: Swap faulty unit. Patient on backup tanks.
+
+Order 5
+Delivery to Linda Martinez, 760-555-3344
+73450 Country Club Dr, Palm Desert, CA 92260
+Items: Hospital Bed, Wheelchair, Walker
+Time: 12:00 PM - 4:00 PM
+Notes: Retirement community. Check main office. Unit 204.
+
+Order 6 - SPECIFIC TIME 3-5 PM
+Delivery to Michael Anderson, 760-555-9012
+79200 Avenue 42, Bermuda Dunes, CA 92203
+Items: CPAP Machine, Full Face Mask, Heated Humidifier
+Time: 3:00 PM - 5:00 PM
+Notes: MUST BE 3-5PM. Patient only available then. Setup required 45 min. Call 1 hour before.
+
+Order 7
+Delivery to Susan Davis, 951-555-6677
+41905 Moraga Rd, Temecula, CA 92591
+Items: Knee Scooter, Crutches, Ice Machine
+Time: 1:00 PM - 5:00 PM
+Notes: Post-surgery. Ground floor. Vista Heights complex.
+
+Order 8 - TWO PERSON CREW
+Delivery to David Kim, 909-555-8899
+12789 Central Ave, Chino, CA 91710
+Items: Power Wheelchair, 24ft Portable Ramp
+Time: 10:00 AM - 4:00 PM
+Notes: Two-person delivery. Ramp setup in driveway.
+
+===================================
+PASTE FORMAT FOR INPUT ORDERS PAGE:
+===================================
+
+Delivery to Maria Rodriguez, 562-555-8901, 4521 Atlantic Ave, Long Beach, CA 90807
+Items: Hospital Bed, Bedside Table, Patient Lift
+Time: 8:00 AM - 12:00 PM
+URGENT - Must arrive before noon. Call 30 min ahead.
+
+Delivery to Robert Chen, 626-555-4567, 1245 S San Gabriel Blvd, San Gabriel, CA 91776
+Items: Oxygen Concentrator 5L, Wheelchair
+Time: 9:00 AM - 12:00 PM
+CRITICAL - Setup and train by noon. Gate code: #5432
+
+Pickup from Patricia Williams, 909-555-2341, 8932 Foothill Blvd, Rancho Cucamonga, CA 91730
+Items: Hospital Bed, Overbed Table
+Time: 10:00 AM - 2:00 PM
+Equipment in garage. Son will assist.
+
+Exchange for James Thompson, 951-555-7788, 24567 Alessandro Blvd, Moreno Valley, CA 92553
+Items: Oxygen Concentrator
+Time: 11:00 AM - 3:00 PM
+Swap faulty unit. Patient on backup tanks.
+
+Delivery to Linda Martinez, 760-555-3344, 73450 Country Club Dr, Palm Desert, CA 92260
+Items: Hospital Bed, Wheelchair, Walker
+Time: 12:00 PM - 4:00 PM
+Retirement community. Check main office. Unit 204.
+
+Delivery to Michael Anderson, 760-555-9012, 79200 Avenue 42, Bermuda Dunes, CA 92203
+Items: CPAP Machine, Full Face Mask, Heated Humidifier
+Time: 3:00 PM - 5:00 PM
+MUST BE 3-5PM. Patient only available then. Setup required 45 min. Call 1 hour before.
+
+Delivery to Susan Davis, 951-555-6677, 41905 Moraga Rd, Temecula, CA 92591
+Items: Knee Scooter, Crutches, Ice Machine
+Time: 1:00 PM - 5:00 PM
+Post-surgery. Ground floor. Vista Heights complex.
+
+Delivery to David Kim, 909-555-8899, 12789 Central Ave, Chino, CA 91710
+Items: Power Wheelchair, 24ft Portable Ramp
+Time: 10:00 AM - 4:00 PM
+Two-person delivery. Ramp setup in driveway.
