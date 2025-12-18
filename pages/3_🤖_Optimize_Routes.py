@@ -59,11 +59,37 @@ if not st.session_state.optimized_routes:
         saved_routes = db.get_routes(date=today)
         
         if saved_routes:
-            # Reconstruct optimized_routes structure
-            # (Assuming get_routes returns list, need to group by driver)
-            # This is simplified - adjust based on actual data structure
-            st.session_state.optimized_routes = saved_routes
-            st.info(f"📥 Loaded existing routes for {today} from database")
+            # Reconstruct optimized_routes dictionary structure (driver_name -> {summary, stops})
+            reconstructed = {}
+            for route_row in saved_routes:
+                driver_name = route_row.get('driver_name')
+                if not driver_name: continue
+                
+                # Filter session orders for this driver to populate 'stops'
+                # This ensures the UI has the actual order details
+                driver_stops = []
+                if 'orders' in st.session_state:
+                    driver_stops = [o for o in st.session_state.orders if o.get('assigned_driver') == driver_name]
+                    # Attempt to sort by stop number if available
+                    try:
+                        driver_stops.sort(key=lambda x: int(x.get('stop_number', 999)) if str(x.get('stop_number', '')).isdigit() else 999)
+                    except:
+                        pass
+                
+                reconstructed[driver_name] = {
+                    "summary": {
+                        "start_location": route_row.get('start_location', 'N/A'),
+                        "total_stops": route_row.get('total_stops', 0),
+                        "total_distance_miles": route_row.get('total_distance_miles', 0),
+                        "total_drive_time_min": route_row.get('total_drive_time_min', 0),
+                        "estimated_finish": route_row.get('estimated_finish', 'TBD'),
+                    },
+                    "stops": driver_stops
+                }
+            
+            st.session_state.optimized_routes = reconstructed
+            if reconstructed:
+                st.info(f"📥 Loaded {len(reconstructed)} existing routes for {today} from database")
             
     except Exception as e:
         # Silently fail - no routes to load
@@ -121,7 +147,8 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
             st.success("✅ Routes optimized successfully!")
             
             # UPDATE Assigned Driver in Session State automatically
-            for driver_name, route_data in st.session_state.optimized_routes.items():
+            routes_to_process = st.session_state.optimized_routes if isinstance(st.session_state.optimized_routes, dict) else {}
+            for driver_name, route_data in routes_to_process.items():
                 # route_data is a dict containing 'stops' and 'summary'
                 stops = route_data.get('stops', [])
                 for route_order in stops:
@@ -152,7 +179,8 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                 
                 # UPDATE existing orders instead of creating duplicates
                 update_count = 0
-                for driver_name, route_data in st.session_state.optimized_routes.items():
+                routes_to_save = st.session_state.optimized_routes if isinstance(st.session_state.optimized_routes, dict) else {}
+                for driver_name, route_data in routes_to_save.items():
                     route_id = f"ROUTE-{today.replace('-', '')}-{driver_name.split()[0].upper()}"
                     stops = route_data.get('stops', [])
                     
@@ -206,7 +234,9 @@ if st.session_state.optimized_routes:
     # Display formatted routes
     formatter = RouteFormatter()
     
-    for driver_name, route_data in st.session_state.optimized_routes.items():
+    # Defensive check: Ensure we are iterating over a dictionary
+    routes_to_display = st.session_state.optimized_routes if isinstance(st.session_state.optimized_routes, dict) else {}
+    for driver_name, route_data in routes_to_display.items():
         with st.expander(f"🚚 {driver_name}", expanded=True):
             summary = route_data.get('summary', {})
             stops = route_data.get('stops', [])
@@ -384,7 +414,8 @@ if st.session_state.optimized_routes:
                 
                 # UPDATE existing orders instead of creating duplicates
                 update_count = 0
-                for driver_name, route_data in st.session_state.optimized_routes.items():
+                routes_to_manual_save = st.session_state.optimized_routes if isinstance(st.session_state.optimized_routes, dict) else {}
+                for driver_name, route_data in routes_to_manual_save.items():
                     route_id = f"ROUTE-{today.replace('-', '')}-{driver_name.split()[0].upper()}"
                     stops = route_data.get('stops', [])
                     
