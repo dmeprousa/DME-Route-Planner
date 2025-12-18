@@ -46,20 +46,30 @@ def load_data_from_db(date_obj):
         st.error(f"Error loading data: {e}")
         return []
 
-# Smart data loading: prefer session state, fallback to database
+# Smart data loading: Always respect the selected date
 def load_orders_for_map(date_obj):
     """
     Load orders for map visualization.
     Priority:
-    1. Use optimized_routes from session state (most recent)
-    2. Fallback to orders from session state
-    3. Finally, load from database
+    1. Check if session state date matches selected date
+    2. If dates match, use optimized_routes or session state orders
+    3. Otherwise, always load from database for the selected date
     """
-    orders = []
+    date_str = date_obj.strftime('%Y-%m-%d')
+    session_date = st.session_state.get('selected_date', None)
     
-    # Option 1: Use optimized routes if available (BEST - includes driver assignments)
-    if 'optimized_routes' in st.session_state and st.session_state.optimized_routes:
+    # Check if session state data is for the same date
+    date_matches = False
+    if session_date:
+        if isinstance(session_date, str):
+            date_matches = (session_date == date_str)
+        else:
+            date_matches = (session_date.strftime('%Y-%m-%d') == date_str)
+    
+    # Option 1: Use optimized routes if available AND date matches
+    if date_matches and 'optimized_routes' in st.session_state and st.session_state.optimized_routes:
         st.info("📍 Loading routes from current optimization session")
+        orders = []
         for driver_name, route_data in st.session_state.optimized_routes.items():
             stops = route_data.get('stops', [])
             for stop in stops:
@@ -70,7 +80,7 @@ def load_orders_for_map(date_obj):
                     'city': stop.get('city', ''),
                     'assigned_driver': driver_name,
                     'stop_number': stop.get('stop_number', ''),
-                    'status': 'pending',
+                    'status': stop.get('status', 'pending'),
                     'order_type': stop.get('order_type', ''),
                     'items': stop.get('items', ''),
                     'time_window': stop.get('time_window', ''),
@@ -86,14 +96,14 @@ def load_orders_for_map(date_obj):
         
         return orders
     
-    # Option 2: Use session state orders if available
-    elif 'orders' in st.session_state and st.session_state.orders:
+    # Option 2: Use session state orders if available AND date matches
+    elif date_matches and 'orders' in st.session_state and st.session_state.orders:
         st.info("📍 Loading orders from current session")
         return st.session_state.orders
     
-    # Option 3: Load from database
+    # Option 3: Always load from database for different dates or no session data
     else:
-        st.info("📍 Loading orders from database")
+        st.info(f"📍 Loading orders from database for {date_str}")
         return load_data_from_db(date_obj)
 
 orders = load_orders_for_map(selected_date)
@@ -261,22 +271,135 @@ if unassigned_mapped:
 folium.LayerControl().add_to(m)
 
 # Layout
-col_map, col_details = st.columns([3, 1])
+st_folium(m, width="100%", height=600)
 
-with col_map:
-    st_folium(m, width="100%", height=600)
+# --- Stats Section ---
+st.divider()
 
-with col_details:
-    st.subheader("Stats")
-    st.metric("📍 Mapped Stops", len(valid_orders))
+col_stats1, col_stats2, col_stats3 = st.columns(3)
+with col_stats1:
+    st.metric("📍 Total Stops", len(valid_orders))
+with col_stats2:
+    st.metric("🚚 Active Drivers", len(drivers))
+with col_stats3:
     st.metric("⚠️ Unmapped", len(unmapped_orders))
+
+# --- Driver Details Table ---
+if drivers:
+    st.subheader("📊 Driver Route Details")
     
+    # Calculate stats for each driver
+    driver_stats = []
+    for driver in drivers:
+        if not driver:
+            continue
+            
+        driver_orders = [o for o in valid_orders if o.get('assigned_driver') == driver]
+        
+        if not driver_orders:
+            continue
+        
+        # Count statuses
+        total_stops = len(driver_orders)
+        delivered = len([o for o in driver_orders if o.get('status', '').lower() == 'delivered'])
+        pending = total_stops - delivered
+        
+        # Calculate completion percentage
+        completion = (delivered / total_stops * 100) if total_stops > 0 else 0
+        
+        # Estimate route distance (simplified - sum of distances between consecutive stops)
+        distance_km = 0
+        sorted_orders = sorted(driver_orders, key=lambda x: int(x.get('stop_number', 0)) if x.get('stop_number') else 999)
+        
+        for i in range(len(sorted_orders) - 1):
+            try:
+                lat1, lng1 = sorted_orders[i]['lat'], sorted_orders[i]['lng']
+                lat2, lng2 = sorted_orders[i + 1]['lat'], sorted_orders[i + 1]['lng']
+                
+                # Haversine formula for distance
+                from math import radians, cos, sin, asin, sqrt
+                
+                lat1, lng1, lat2, lng2 = map(radians, [lat1, lng1, lat2, lng2])
+                dlng = lng2 - lng1
+                dlat = lat2 - lat1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlng/2)**2
+                c = 2 * asin(sqrt(a))
+                km = 6371 * c  # Radius of earth in kilometers
+                distance_km += km
+            except:
+                pass
+        
+        # Estimate time (assume 30 min per stop + travel time)
+        # Average speed: 40 km/h in city
+        travel_time_hours = distance_km / 40 if distance_km > 0 else 0
+        stop_time_hours = (total_stops * 30) / 60  # 30 min per stop
+        total_time_hours = travel_time_hours + stop_time_hours
+        
+        # Get first and last stops
+        first_stop = sorted_orders[0].get('customer_name', 'N/A') if sorted_orders else 'N/A'
+        last_stop = sorted_orders[-1].get('customer_name', 'N/A') if sorted_orders else 'N/A'
+        
+        driver_stats.append({
+            'Driver': driver,
+            'Total Stops': total_stops,
+            'Delivered': delivered,
+            'Pending': pending,
+            'Completion': f"{completion:.0f}%",
+            'Distance (km)': f"{distance_km:.1f}",
+            'Est. Time (hrs)': f"{total_time_hours:.1f}",
+            'First Stop': first_stop,
+            'Last Stop': last_stop
+        })
+    
+    if driver_stats:
+        # Create DataFrame
+        stats_df = pd.DataFrame(driver_stats)
+        
+        # Display as styled table
+        st.dataframe(
+            stats_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Driver": st.column_config.TextColumn("🚚 Driver", width="medium"),
+                "Total Stops": st.column_config.NumberColumn("📍 Stops", width="small"),
+                "Delivered": st.column_config.NumberColumn("✅ Done", width="small"),
+                "Pending": st.column_config.NumberColumn("⏳ Pending", width="small"),
+                "Completion": st.column_config.ProgressColumn("📊 Progress", width="medium", format="%s", min_value=0, max_value=100),
+                "Distance (km)": st.column_config.TextColumn("📏 Distance", width="small"),
+                "Est. Time (hrs)": st.column_config.TextColumn("⏱️ Time", width="small"),
+                "First Stop": st.column_config.TextColumn("🏁 First", width="medium"),
+                "Last Stop": st.column_config.TextColumn("🏁 Last", width="medium"),
+            }
+        )
+        
+        # Add download button
+        csv = stats_df.to_csv(index=False)
+        st.download_button(
+            label="📥 Download Route Stats",
+            data=csv,
+            file_name=f"driver_stats_{selected_date.strftime('%Y-%m-%d')}.csv",
+            mime="text/csv",
+        )
+
+# --- Unmapped Orders ---
+if unmapped_orders:
     st.divider()
-    if unmapped_orders:
-        with st.expander("Unmapped Orders (Missing Coords)"):
-            status_df = pd.DataFrame(unmapped_orders)
-            if 'address' in status_df.columns:
-                st.dataframe(status_df[['customer_name', 'address']], hide_index=True)
-            else:
-                 st.dataframe(status_df, hide_index=True)
+    with st.expander(f"⚠️ Unmapped Orders ({len(unmapped_orders)})"):
+        st.caption("These orders are missing GPS coordinates and cannot be displayed on the map.")
+        status_df = pd.DataFrame(unmapped_orders)
+        
+        # Check which columns are available and display accordingly
+        available_cols = []
+        if 'customer_name' in status_df.columns:
+            available_cols.append('customer_name')
+        if 'address' in status_df.columns:
+            available_cols.append('address')
+        if 'city' in status_df.columns:
+            available_cols.append('city')
+        
+        if available_cols:
+            st.dataframe(status_df[available_cols], hide_index=True, use_container_width=True)
+        else:
+            st.dataframe(status_df, hide_index=True, use_container_width=True)
 
