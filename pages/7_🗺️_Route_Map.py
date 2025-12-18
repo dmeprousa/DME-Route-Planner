@@ -36,7 +36,7 @@ with col3:
 
 # --- Load Data ---
 @st.cache_data(ttl=60)
-def load_data(date_obj):
+def load_data_from_db(date_obj):
     try:
         db = Database()
         date_str = date_obj.strftime('%Y-%m-%d')
@@ -46,10 +46,69 @@ def load_data(date_obj):
         st.error(f"Error loading data: {e}")
         return []
 
-orders = load_data(selected_date)
+# Smart data loading: prefer session state, fallback to database
+def load_orders_for_map(date_obj):
+    """
+    Load orders for map visualization.
+    Priority:
+    1. Use optimized_routes from session state (most recent)
+    2. Fallback to orders from session state
+    3. Finally, load from database
+    """
+    orders = []
+    
+    # Option 1: Use optimized routes if available (BEST - includes driver assignments)
+    if 'optimized_routes' in st.session_state and st.session_state.optimized_routes:
+        st.info("📍 Loading routes from current optimization session")
+        for driver_name, route_data in st.session_state.optimized_routes.items():
+            stops = route_data.get('stops', [])
+            for stop in stops:
+                # Convert stop to order format
+                order = {
+                    'customer_name': stop.get('customer_name', 'Unknown'),
+                    'address': stop.get('address', ''),
+                    'city': stop.get('city', ''),
+                    'assigned_driver': driver_name,
+                    'stop_number': stop.get('stop_number', ''),
+                    'status': 'pending',
+                    'order_type': stop.get('order_type', ''),
+                    'items': stop.get('items', ''),
+                    'time_window': stop.get('time_window', ''),
+                }
+                
+                # Get coordinates if available
+                coords = stop.get('coordinates', {})
+                if coords and coords.get('lat') and coords.get('lng'):
+                    order['lat'] = coords.get('lat')
+                    order['lng'] = coords.get('lng')
+                
+                orders.append(order)
+        
+        return orders
+    
+    # Option 2: Use session state orders if available
+    elif 'orders' in st.session_state and st.session_state.orders:
+        st.info("📍 Loading orders from current session")
+        return st.session_state.orders
+    
+    # Option 3: Load from database
+    else:
+        st.info("📍 Loading orders from database")
+        return load_data_from_db(date_obj)
+
+orders = load_orders_for_map(selected_date)
 
 if not orders:
-    st.info("No orders found for this date.")
+    st.warning("⚠️ No orders found for this date.")
+    st.info("💡 Tip: Go to 'Optimize Routes' to create routes, or 'Input Orders' to add new orders.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🤖 Optimize Routes"):
+            st.switch_page("pages/3_🤖_Optimize_Routes.py")
+    with col2:
+        if st.button("📦 Input Orders"):
+            st.switch_page("pages/1_📦_Input_Orders.py")
     st.stop()
 
 df = pd.DataFrame(orders)

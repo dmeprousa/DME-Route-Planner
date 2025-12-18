@@ -38,13 +38,59 @@ with col3:
 
 st.divider()
 
+# Smart data loading function
+def load_orders_smart(date_str):
+    """
+    Load orders with priority:
+    1. Optimized routes from session (most up-to-date)
+    2. Session state orders
+    3. Database orders
+    """
+    # Priority 1: Use optimized routes if available
+    if 'optimized_routes' in st.session_state and st.session_state.optimized_routes:
+        orders = []
+        for driver_name, route_data in st.session_state.optimized_routes.items():
+            stops = route_data.get('stops', [])
+            for stop in stops:
+                order = {
+                    'order_id': stop.get('order_id', 'N/A'),
+                    'customer_name': stop.get('customer_name', 'Unknown'),
+                    'address': stop.get('address', ''),
+                    'city': stop.get('city', ''),
+                    'assigned_driver': driver_name,
+                    'stop_number': stop.get('stop_number', ''),
+                    'status': 'pending',  # Default, can be updated
+                    'order_type': stop.get('order_type', ''),
+                    'items': stop.get('items', ''),
+                    'time_window': stop.get('time_window', ''),
+                }
+                orders.append(order)
+        return orders, "session_optimized"
+    
+    # Priority 2: Use session orders if available  
+    elif 'orders' in st.session_state and st.session_state.orders:
+        return st.session_state.orders, "session_orders"
+    
+    # Priority 3: Load from database
+    else:
+        db = Database()
+        orders = db.get_orders(date=date_str)
+        return orders, "database"
+
 # Load orders from database
 try:
-    db = Database()
     date_str = selected_date.strftime('%Y-%m-%d')
     
-    # Get all orders for this date
-    all_orders = db.get_orders(date=date_str)
+    all_orders, data_source = load_orders_smart(date_str)
+    
+    # Show data source info
+    if data_source == "session_optimized":
+        st.success("✅ Showing optimized routes from current session")
+    elif data_source == "session_orders":
+        st.info("ℹ️ Showing orders from current session")
+    else:
+        st.info("📊 Showing orders from database")
+    
     
     if all_orders:
         df = pd.DataFrame(all_orders)
