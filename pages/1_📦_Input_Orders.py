@@ -404,12 +404,18 @@ if st.session_state.orders:
         df.insert(0, "Selected", False)
 
     # Interactive Data Editor
+    
+    # Add helpful info about assigned orders
+    assigned_count = len([o for o in st.session_state.orders if o.get('assigned_driver') and o.get('assigned_driver') not in ['Unassigned', 'None', '', None]])
+    if assigned_count > 0:
+        st.info(f"ℹ️ **{assigned_count} orders currently assigned to drivers** - These are marked in the 'Assigned Driver' column below.")
+    
     edited_df = st.data_editor(
         df,
         column_config={
             "Selected": st.column_config.CheckboxColumn(
                 "Select",
-                help="Select order to delete",
+                help="Select order to delete or route",
                 default=False,
             ),
             "status": st.column_config.SelectboxColumn(
@@ -426,13 +432,11 @@ if st.session_state.orders:
                 required=True,
             ),
 
-            # NEW: Assigned Driver Dropdown
-            "assigned_driver": st.column_config.SelectboxColumn(
-                "💂 Assigned Driver",
-                help="Driver assigned to this order",
+            # Enhanced: Assigned Driver with emoji
+            "assigned_driver": st.column_config.TextColumn(
+                "🚚 Assigned Driver",
+                help="Driver currently assigned to this order (if any)",
                 width="medium",
-                options=["Unassigned"] + st.session_state.get('selected_drivers', []),
-                required=False
             ),
             # NEW: Parsing Time
             "parsed_at": st.column_config.DatetimeColumn(
@@ -455,7 +459,7 @@ if st.session_state.orders:
             "customer", "phone", "address", "city", "zip_code", 
             "items", "time_window", "notes"
         ],
-        disabled=[c for c in df.columns if c not in ["Selected", "status"]], # Safer way to disable columns
+        disabled=[c for c in df.columns if c not in ["Selected", "status", "assigned_driver"]], # Allow editing driver assignment
         hide_index=True,
         key="order_editor" 
     )
@@ -546,11 +550,51 @@ if st.session_state.orders:
     with col2:
         # Send selected orders to routes
         if count > 0:
-            if st.button(f"✈️ Send Selected ({count}) to Routes", type="primary", use_container_width=True):
-                # Mark these as "for routing"
-                st.session_state.orders_for_routing = [st.session_state.orders[i] for i in selected_indices]
-                st.success(f"✅ {count} orders ready for routing!")
-                st.switch_page("pages/2_👥_Select_Drivers.py")
+            # Check if any selected orders already have drivers assigned
+            assigned_orders = []
+            unassigned_orders = []
+            
+            for i in selected_indices:
+                order = st.session_state.orders[i]
+                driver = order.get('assigned_driver', '')
+                if driver and driver not in ['Unassigned', 'None', '', None]:
+                    assigned_orders.append(order)
+                else:
+                    unassigned_orders.append(order)
+            
+            # Show warning if trying to re-route assigned orders
+            if assigned_orders:
+                st.warning(
+                    f"⚠️ **{len(assigned_orders)} of the selected orders are already assigned to drivers!**\n\n"
+                    f"Re-routing these orders will change their driver assignments."
+                )
+                
+                # Show which drivers will be affected
+                affected_drivers = set([o.get('assigned_driver', '') for o in assigned_orders])
+                affected_drivers = [d for d in affected_drivers if d and d not in ['Unassigned', 'None', '']]
+                if affected_drivers:
+                    st.info(f"📋 Currently assigned to: {', '.join(affected_drivers)}")
+                
+                col_override1, col_override2 = st.columns(2)
+                
+                with col_override1:
+                    if st.button(f"🔄 Override & Re-Route All ({count})", type="secondary", use_container_width=True):
+                        st.session_state.orders_for_routing = [st.session_state.orders[i] for i in selected_indices]
+                        st.warning(f"⚠️ Re-routing {count} orders (including {len(assigned_orders)} already assigned)")
+                        st.switch_page("pages/2_👥_Select_Drivers.py")
+                
+                with col_override2:
+                    if len(unassigned_orders) > 0:
+                        if st.button(f"✈️ Route Unassigned Only ({len(unassigned_orders)})", type="primary", use_container_width=True):
+                            st.session_state.orders_for_routing = unassigned_orders
+                            st.success(f"✅ {len(unassigned_orders)} unassigned orders ready for routing!")
+                            st.switch_page("pages/2_👥_Select_Drivers.py")
+            else:
+                # All selected are unassigned - safe to route
+                if st.button(f"✈️ Send Selected ({count}) to Routes", type="primary", use_container_width=True):
+                    st.session_state.orders_for_routing = [st.session_state.orders[i] for i in selected_indices]
+                    st.success(f"✅ {count} orders ready for routing!")
+                    st.switch_page("pages/2_👥_Select_Drivers.py")
         else:
             if st.button("👥 Next: Select Drivers →", use_container_width=True):
                 # If nothing selected, send all
