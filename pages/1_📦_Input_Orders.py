@@ -533,8 +533,14 @@ if st.session_state.orders:
                             date_str = today.strftime('%Y-%m-%d')
                             db.save_orders(st.session_state.orders, date_str)
                             
-                            # Force reload from database to ensure consistency
+                            # Delete session cache to prevent auto-restore
                             current_user = UserSession.get_current_user()
+                            if current_user:
+                                cache_file = f".session_cache_{current_user}.json"
+                                if os.path.exists(cache_file):
+                                    os.remove(cache_file)
+                            
+                            # Force reload from database to ensure consistency
                             if current_user and sheets.spreadsheet:
                                 pending = sheets.load_pending_orders(current_user)
                                 today_str = today.strftime('%Y-%m-%d')
@@ -575,8 +581,14 @@ if st.session_state.orders:
                             date_str = today.strftime('%Y-%m-%d')
                             db.save_orders(st.session_state.orders, date_str)
                             
-                            # Force reload from database to ensure consistency
+                            # Delete session cache to prevent auto-restore
                             current_user = UserSession.get_current_user()
+                            if current_user:
+                                cache_file = f".session_cache_{current_user}.json"
+                                if os.path.exists(cache_file):
+                                    os.remove(cache_file)
+                            
+                            # Force reload from database to ensure consistency
                             if current_user and sheets.spreadsheet:
                                 pending = sheets.load_pending_orders(current_user)
                                 today_str = today.strftime('%Y-%m-%d')
