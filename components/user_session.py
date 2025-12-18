@@ -341,16 +341,17 @@ class UserSession:
             except Exception:
                 pass
             
-            # Clear user session
+            # Clear user session (but DON'T clear orders - they're in database!)
             st.session_state.current_user = None
             st.session_state.user_name = None
             st.session_state.user_role = None
             st.session_state.login_attempts = 0
             
-            # Clear app data
-            st.session_state.orders = []
-            st.session_state.selected_drivers = []
-            st.session_state.optimized_routes = {}
+            # DON'T clear app data - let it reload from database on next login
+            # This prevents accidental data loss from logout
+            # st.session_state.orders = []  # REMOVED
+            # st.session_state.selected_drivers = []  # REMOVED
+            # st.session_state.optimized_routes = {}  # REMOVED
     
     @staticmethod
     def log_session_end(username):
