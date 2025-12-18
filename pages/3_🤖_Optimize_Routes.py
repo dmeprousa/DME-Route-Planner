@@ -130,6 +130,8 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                         # Match by address (and customer if possible) to be safe
                         if session_order.get('address') == route_order.get('address'):
                             session_order['assigned_driver'] = driver_name
+                            session_order['stop_number'] = route_order.get('stop_number', '')
+                            session_order['eta'] = route_order.get('eta', '')
                             
             # Trigger session save
             from components.user_session import UserSession
@@ -142,10 +144,41 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                 
                 # Save routes
                 db.save_routes(st.session_state.optimized_routes, today)
-                # Save orders that were routed
-                db.save_orders(orders_to_route, today)
                 
-                st.success("💾 Routes auto-saved to database!")
+                # UPDATE existing orders instead of creating duplicates
+                update_count = 0
+                for driver_name, route_data in st.session_state.optimized_routes.items():
+                    route_id = f"ROUTE-{today.replace('-', '')}-{driver_name.split()[0].upper()}"
+                    stops = route_data.get('stops', [])
+                    
+                    for stop in stops:
+                        # Try to find order_id
+                        order_id = stop.get('order_id')
+                        
+                        # If order_id is not available, try to find it from orders_to_route
+                        if not order_id or order_id == 'MANUAL':
+                            # Match by address
+                            for order in orders_to_route:
+                                if order.get('address') == stop.get('address'):
+                                    order_id = order.get('order_id')
+                                    break
+                        
+                        # Update the order in Google Sheets
+                        if order_id:
+                            try:
+                                success = db.update_order_driver_and_route(
+                                    order_id=order_id,
+                                    driver_name=driver_name,
+                                    route_id=route_id,
+                                    stop_number=str(stop.get('stop_number', '')),
+                                    eta=stop.get('eta', '')
+                                )
+                                if success:
+                                    update_count += 1
+                            except Exception as update_err:
+                                st.warning(f"⚠️ Could not update order {order_id}: {str(update_err)}")
+                
+                st.success(f"💾 Routes saved! Updated {update_count} orders in Google Sheets")
                 
             except Exception as save_error:
                 st.warning(f"⚠️ Routes generated but couldn't auto-save: {str(save_error)}")
@@ -343,10 +376,38 @@ if st.session_state.optimized_routes:
                 
                 db = Database()
                 db.save_routes(st.session_state.optimized_routes, today)
-                # Save only the orders that were routed
-                db.save_orders(orders_to_route, today)
                 
-                st.success("✅ Routes and orders saved to Google Sheets!")
+                # UPDATE existing orders instead of creating duplicates
+                update_count = 0
+                for driver_name, route_data in st.session_state.optimized_routes.items():
+                    route_id = f"ROUTE-{today.replace('-', '')}-{driver_name.split()[0].upper()}"
+                    stops = route_data.get('stops', [])
+                    
+                    for stop in stops:
+                        order_id = stop.get('order_id')
+                        
+                        # Try to find order_id from orders_to_route if not in stop
+                        if not order_id or order_id == 'MANUAL':
+                            for order in orders_to_route:
+                                if order.get('address') == stop.get('address'):
+                                    order_id = order.get('order_id')
+                                    break
+                        
+                        if order_id:
+                            try:
+                                success = db.update_order_driver_and_route(
+                                    order_id=order_id,
+                                    driver_name=driver_name,
+                                    route_id=route_id,
+                                    stop_number=str(stop.get('stop_number', '')),
+                                    eta=stop.get('eta', '')
+                                )
+                                if success:
+                                    update_count += 1
+                            except Exception as update_err:
+                                st.warning(f"⚠️ Could not update order {order_id}: {str(update_err)}")
+                
+                st.success(f"✅ Routes saved! Updated {update_count} orders in Google Sheets")
                 
             except Exception as e:
                 st.error(f"Error saving to database: {str(e)}")
