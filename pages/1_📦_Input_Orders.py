@@ -411,7 +411,7 @@ if st.session_state.orders:
         st.info(f"📌 {assigned_count} order(s) assigned to drivers")
 
     # Data Editor with column configurations
-    edited_df = st.experimental_data_editor(
+    edited_df = st.data_editor(
         df,
         use_container_width=True,
         num_rows="fixed",
