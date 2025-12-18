@@ -127,11 +127,16 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                 for route_order in stops:
                     # Find matching order in session to update driver
                     for session_order in st.session_state.orders:
-                        # Match by address (and customer if possible) to be safe
-                        if session_order.get('address') == route_order.get('address'):
+                        # Match by customer + address for more reliability
+                        address_match = session_order.get('address', '').strip().lower() == route_order.get('address', '').strip().lower()
+                        customer_match = session_order.get('customer_name', '').strip().lower() == route_order.get('customer_name', '').strip().lower()
+                        
+                        if address_match and customer_match:
                             session_order['assigned_driver'] = driver_name
                             session_order['stop_number'] = route_order.get('stop_number', '')
                             session_order['eta'] = route_order.get('eta', '')
+                            session_order['status'] = 'sent_to_driver'  # Update status!
+                            break  # Found match, move to next route_order
                             
             # Trigger session save
             from components.user_session import UserSession

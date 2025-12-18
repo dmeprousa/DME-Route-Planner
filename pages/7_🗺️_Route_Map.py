@@ -71,13 +71,22 @@ def load_orders_for_map(date_obj):
             for driver_name, route_data in st.session_state.optimized_routes.items():
                 stops = route_data.get('stops', [])
                 for stop in stops:
+                    # Try to find the actual order in session_state.orders to get real status
+                    actual_status = 'pending'  # default
+                    for session_order in st.session_state.get('orders', []):
+                        address_match = session_order.get('address', '').strip().lower() == stop.get('address', '').strip().lower()
+                        customer_match = session_order.get('customer_name', '').strip().lower() == stop.get('customer_name', '').strip().lower()
+                        if address_match and customer_match:
+                            actual_status = session_order.get('status', 'pending')
+                            break
+                    
                     order = {
                         'customer_name': stop.get('customer_name', 'Unknown'),
                         'address': stop.get('address', ''),
                         'city': stop.get('city', ''),
                         'assigned_driver': driver_name,
                         'stop_number': stop.get('stop_number', ''),
-                        'status': stop.get('status', 'pending'),
+                        'status': actual_status,  # Use actual status from session
                         'order_type': stop.get('order_type', ''),
                         'items': stop.get('items', ''),
                         'time_window': stop.get('time_window', ''),
