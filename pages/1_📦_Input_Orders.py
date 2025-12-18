@@ -410,6 +410,17 @@ if st.session_state.orders:
     if assigned_count > 0:
         st.info(f"📌 {assigned_count} order(s) assigned to drivers")
 
+    # Load available drivers for dropdown
+    try:
+        from components.database import Database
+        db = Database()
+        all_drivers = db.get_drivers(status='active')
+        driver_names = [d.get('name', '') for d in all_drivers if d.get('name')]
+        driver_options = ["Unassigned"] + driver_names
+    except Exception as e:
+        driver_options = ["Unassigned"]
+        st.warning(f"Could not load drivers: {str(e)}")
+
     # Data Editor with column configurations
     edited_df = st.data_editor(
         df,
@@ -435,11 +446,13 @@ if st.session_state.orders:
                 required=True,
             ),
 
-            # Enhanced: Assigned Driver with emoji
-            "assigned_driver": st.column_config.TextColumn(
+            # Enhanced: Assigned Driver as dropdown
+            "assigned_driver": st.column_config.SelectboxColumn(
                 "🚚 Assigned Driver",
-                help="Driver currently assigned to this order (if any)",
+                help="Select a driver to assign this order",
                 width="medium",
+                options=driver_options,
+                required=False,
             ),
             # NEW: Parsing Time
             "parsed_at": st.column_config.DatetimeColumn(
