@@ -521,16 +521,28 @@ if st.session_state.orders:
                 col_conf1, col_conf2 = st.columns(2)
                 with col_conf1:
                     if st.button("✅ Yes, Delete", type="primary", key="btn_confirm_del"):
+                        # Show debug info
+                        st.info(f"Deleting indices: {st.session_state.pending_delete_indices}")
+                        st.info(f"Current order count: {len(st.session_state.orders)}")
+                        
                         # Remove selected orders (reverse order to avoid index shift issues)
+                        deleted_orders = []
                         for index in sorted(st.session_state.pending_delete_indices, reverse=True):
                             if index < len(st.session_state.orders):
+                                deleted_order = st.session_state.orders[index]
+                                deleted_orders.append(deleted_order.get('customer_name', 'Unknown'))
                                 del st.session_state.orders[index]
+                        
+                        st.info(f"Deleted: {deleted_orders}")
+                        st.info(f"Remaining orders: {len(st.session_state.orders)}")
                         
                         # Sync to Google Sheets after deletion
                         try:
                             from components.database import Database
                             db = Database()
                             date_str = today.strftime('%Y-%m-%d')
+                            
+                            st.info(f"Saving {len(st.session_state.orders)} orders to database...")
                             db.save_orders(st.session_state.orders, date_str)
                             
                             # Delete session cache to prevent auto-restore
@@ -539,9 +551,11 @@ if st.session_state.orders:
                                 cache_file = f".session_cache_{current_user}.json"
                                 if os.path.exists(cache_file):
                                     os.remove(cache_file)
+                                    st.info("Cache deleted")
                             
                             # Force reload from ORDERS sheet (not PENDING_ORDERS!)
                             fresh_orders = db.get_orders(date=date_str, status=None)  # Get all statuses
+                            st.info(f"Reloaded {len(fresh_orders) if fresh_orders else 0} orders from database")
                             st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
@@ -553,7 +567,9 @@ if st.session_state.orders:
                         st.session_state.confirming_delete = False  # Reset
                         st.session_state.pending_delete_indices = []  # Clear
                         st.success(f"🗑️ Deleted {delete_count} orders.")
-                        st.rerun()
+                        
+                        # Wait for user to see debug info
+                        st.button("Click to Refresh", type="primary")
                 with col_conf2:
                     if st.button("❌ Cancel", key="btn_cancel_del"):
                         st.session_state.confirming_delete = False
