@@ -377,7 +377,7 @@ if st.session_state.orders:
     df['status'] = df['status'].fillna('pending')
 
     # Ensure other essential columns exist to prevent display errors
-    essential_cols = ['customer', 'phone', 'time_window', 'notes', 'order_type', 'zip_code', 'city', 'items', 'address', 'assigned_driver']
+    essential_cols = ['customer_name', 'customer_phone', 'time_window', 'special_notes', 'order_type', 'zip_code', 'city', 'items', 'address', 'assigned_driver']
     for col in essential_cols:
         if col not in df.columns:
             df[col] = ""
@@ -408,14 +408,17 @@ if st.session_state.orders:
     # Add helpful info about assigned orders
     assigned_count = len([o for o in st.session_state.orders if o.get('assigned_driver') and o.get('assigned_driver') not in ['Unassigned', 'None', '', None]])
     if assigned_count > 0:
-        st.info(f"ℹ️ **{assigned_count} orders currently assigned to drivers** - These are marked in the 'Assigned Driver' column below.")
-    
-    edited_df = st.data_editor(
+        st.info(f"📌 {assigned_count} order(s) assigned to drivers")
+
+    # Data Editor with column configurations
+    edited_df = st.experimental_data_editor(
         df,
+        use_container_width=True,
+        num_rows="fixed",
         column_config={
             "Selected": st.column_config.CheckboxColumn(
                 "Select",
-                help="Select order to delete or route",
+                help="Select orders for deletion",
                 default=False,
             ),
             "status": st.column_config.SelectboxColumn(
@@ -456,8 +459,8 @@ if st.session_state.orders:
         },
         column_order=[
             "Selected", "status", "assigned_driver", "parsed_at", "order_type", 
-            "customer", "phone", "address", "city", "zip_code", 
-            "items", "time_window", "notes"
+            "customer_name", "customer_phone", "address", "city", "zip_code", 
+            "items", "time_window", "special_notes"
         ],
         disabled=[c for c in df.columns if c not in ["Selected", "status", "assigned_driver"]], # Allow editing driver assignment
         hide_index=True,
