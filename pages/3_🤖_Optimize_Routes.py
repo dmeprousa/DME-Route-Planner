@@ -216,8 +216,24 @@ if st.session_state.optimized_routes:
     # Show unassigned with FORCE ADD option (MOVED HERE to persist)
     if 'unassigned_orders' in st.session_state and st.session_state.unassigned_orders:
         st.divider()
-        st.subheader("❌ Unassigned Orders")
-        st.warning(f"{len(st.session_state.unassigned_orders)} orders could not be auto-assigned. You can manually force-add them below.")
+        st.subheader("⚠️ Unassigned Orders")
+        
+        # Better explanation
+        st.warning(
+            f"**{len(st.session_state.unassigned_orders)} order(s) could not be automatically assigned**\n\n"
+            f"The AI was unable to assign these orders based on driver availability, coverage areas, "
+            f"time windows, or capacity constraints."
+        )
+        
+        # Helpful info box
+        st.info(
+            "💡 **Why some orders remain unassigned:**\n\n"
+            "• **Outside Coverage Area**: Order location is outside all selected drivers' coverage zones\n"
+            "• **Time Conflicts**: Delivery time window conflicts with driver's schedule\n"
+            "• **Capacity Exceeded**: Driver already has maximum number of stops\n"
+            f"• **Multiple Drivers Selected**: Orders are distributed across {len(st.session_state.selected_drivers)} drivers to balance workload\n\n"
+            "You can manually assign these orders below using the Force Add option."
+        )
         
         # Create a copy to iterate safely while modifying
         unassigned_copy = list(st.session_state.unassigned_orders)
@@ -226,25 +242,44 @@ if st.session_state.optimized_routes:
             # Unique key based on index or content
             key_suffix = f"{i}_{len(unassigned_copy)}" 
             
-            with st.expander(f"⚠️ Unassigned Order #{i+1}", expanded=True):
+            with st.expander(f"📦 Unassigned Order #{i+1}", expanded=True):
                 # Handle if order is string or dict
                 if isinstance(order, str):
-                    st.write(order)
+                    st.warning(f"⚠️ **Reason:** {order}")
                     order_details = order
                 else:
-                    st.json(order)
+                    # Show order details in a nice format
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.markdown(f"**Customer:** {order.get('customer_name', 'N/A')}")
+                        st.markdown(f"**Address:** {order.get('address', 'N/A')}")
+                        st.markdown(f"**City:** {order.get('city', 'N/A')}")
+                    with col_b:
+                        st.markdown(f"**Order Type:** {order.get('order_type', 'N/A')}")
+                        st.markdown(f"**Time Window:** {order.get('time_window', 'N/A')}")
+                        st.markdown(f"**Items:** {order.get('items', 'N/A')}")
+                    
+                    # Show possible reason
+                    if order.get('unassigned_reason'):
+                        st.error(f"❌ **Reason:** {order.get('unassigned_reason')}")
+                    else:
+                        st.error("❌ **Reason:** Could not match with any driver's coverage area or schedule")
+                    
                     order_details = str(order)
+                
+                st.divider()
                     
                 col1, col2 = st.columns([2, 1])
                 with col1:
                     target_driver = st.selectbox(
-                        "Assign to Driver",
+                        "🚚 Manually Assign to Driver",
                         options=[d['driver_name'] for d in st.session_state.selected_drivers],
-                        key=f"force_driver_{key_suffix}"
+                        key=f"force_driver_{key_suffix}",
+                        help="Select a driver to manually add this order to their route"
                     )
                 
                 with col2:
-                    if st.button("➕ Force Add to Route", key=f"force_btn_{key_suffix}"):
+                    if st.button("➕ Force Add to Route", key=f"force_btn_{key_suffix}", type="primary"):
                         # Logic to add to optimized_routes
                         if target_driver in st.session_state.optimized_routes:
                             # Create a new stop object

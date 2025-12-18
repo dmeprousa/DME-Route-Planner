@@ -163,14 +163,27 @@ RETURN THIS EXACT JSON FORMAT:
       }}
     }}
   }},
-  "unassigned_orders": [],
+  "unassigned_orders": [
+    {{
+      "order_id": "order ID or index",
+      "customer_name": "customer name",
+      "address": "full address",
+      "city": "city",
+      "order_type": "type",
+      "items": "items",
+      "time_window": "time window",
+      "unassigned_reason": "CLEAR SPECIFIC REASON such as: 'Outside all driver coverage areas (order in San Diego, available drivers cover LA/OC only)' or 'Time window 8:00-9:00 AM conflicts with all drivers' start times' or 'All drivers at maximum capacity (8 stops each)'"
+    }}
+  ],
   "warnings": []
 }}
 
 IMPORTANT:
 - Use 12-hour format with AM/PM
 - Flag time window conflicts in warnings
-- Put unassignable orders in unassigned_orders array
+- For EVERY unassigned order, you MUST provide a CLEAR, SPECIFIC reason in "unassigned_reason" field
+- Reasons should explain EXACTLY why (e.g., coverage area mismatch with specific locations, time conflicts with specific times, capacity limits)
+- This helps dispatchers make informed manual assignment decisions
 - Provide clear reasoning for any issues
 
 Begin optimization now.
