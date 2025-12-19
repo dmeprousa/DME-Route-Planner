@@ -145,11 +145,16 @@ class Database:
     
     def save_orders(self, orders: List[Dict], date: str) -> None:
         """Save orders to ORDERS sheet - replaces existing orders for this date"""
+        import streamlit as st # For debugging
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
             
             # Find rows with matching date (Column B, index 1)
             all_values = ws.get_all_values()
+            
+            # DEBUG
+            # st.write(f"📊 Found {len(all_values)} total rows in sheet")
+            
             if len(all_values) > 1:
                 rows_to_delete = []
                 for idx, row in enumerate(all_values[1:], start=2):
@@ -157,8 +162,10 @@ class Database:
                         rows_to_delete.append(idx)
                 
                 # Delete in reverse order
-                for row_idx in reversed(rows_to_delete):
-                    ws.delete_rows(row_idx)
+                if rows_to_delete:
+                    # st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows for date {date}...")
+                    for row_idx in reversed(rows_to_delete):
+                        ws.delete_rows(row_idx)
             
             # Prepare rows for bulk append
             rows_to_append = []
@@ -204,9 +211,12 @@ class Database:
                 rows_to_append.append(row)
             
             if rows_to_append:
+                # st.write(f"💾 Appending {len(rows_to_append)} new rows...")
                 ws.append_rows(rows_to_append)
+                # st.success("✅ Database updated successfully")
                 
         except Exception as e:
+            st.error(f"❌ DATABASE ERROR: {str(e)}")
             raise Exception(f"Error saving orders: {str(e)}")
     
     def save_routes(self, routes: Dict, date: str) -> None:

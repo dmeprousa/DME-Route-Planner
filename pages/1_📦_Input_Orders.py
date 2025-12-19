@@ -645,10 +645,13 @@ if st.session_state.orders:
                             st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
+                            
                         except Exception as e:
-                            st.error(f"Delete failed: {str(e)}")
+                            st.error(f"❌ Operation failed: {str(e)}")
                             import traceback
                             st.code(traceback.format_exc())
+                            # Restore session state if possible
+                            # st.session_state.orders = orders_to_keep
                         
                         st.session_state.confirming_delete = False  # Reset
                         st.session_state.pending_delete_order_ids = []  # Clear
