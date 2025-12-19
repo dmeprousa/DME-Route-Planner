@@ -153,7 +153,7 @@ class Database:
             all_values = ws.get_all_values()
             
             # DEBUG
-            # st.write(f"📊 Found {len(all_values)} total rows in sheet")
+            st.write(f"📊 Found {len(all_values)} total rows in sheet")
             
             if len(all_values) > 1:
                 rows_to_delete = []
@@ -163,7 +163,7 @@ class Database:
                 
                 # Delete in reverse order
                 if rows_to_delete:
-                    # st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows for date {date}...")
+                    st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows for date {date}...")
                     for row_idx in reversed(rows_to_delete):
                         ws.delete_rows(row_idx)
             
@@ -211,9 +211,9 @@ class Database:
                 rows_to_append.append(row)
             
             if rows_to_append:
-                # st.write(f"💾 Appending {len(rows_to_append)} new rows...")
+                st.write(f"💾 Appending {len(rows_to_append)} new rows...")
                 ws.append_rows(rows_to_append)
-                # st.success("✅ Database updated successfully")
+                st.success("✅ Database updated successfully")
                 
         except Exception as e:
             st.error(f"❌ DATABASE ERROR: {str(e)}")
