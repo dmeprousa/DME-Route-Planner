@@ -311,7 +311,7 @@ class Database:
         except Exception as e:
             raise Exception(f"Error updating status: {str(e)}")
     
-    def update_order_driver_and_route(self, order_id: str, driver_name: str, route_id: str = '', stop_number: str = '', eta: str = '') -> bool:
+    def update_order_driver_and_route(self, order_id: str, driver_name: str, route_id: str = '', stop_number: str = '', eta: str = '', status: str = '') -> bool:
         """Update order's assigned driver and route information"""
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
@@ -320,10 +320,15 @@ class Database:
             if cell:
                 row_num = cell.row
                 # Based on save_orders structure:
+                # Column 4 = status
                 # Column 15 = assigned_driver
                 # Column 16 = route_id
                 # Column 17 = stop_number
                 # Column 18 = eta
+                
+                # Update status if provided (column 4)
+                if status:
+                    ws.update_cell(row_num, 4, status)
                 
                 # Update assigned_driver (column 15)
                 ws.update_cell(row_num, 15, driver_name)

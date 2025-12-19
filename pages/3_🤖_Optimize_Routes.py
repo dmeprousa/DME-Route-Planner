@@ -204,7 +204,8 @@ if st.button("🚀 Run AI Optimization", type="primary", use_container_width=Tru
                                     driver_name=driver_name,
                                     route_id=route_id,
                                     stop_number=str(stop.get('stop_number', '')),
-                                    eta=stop.get('eta', '')
+                                    eta=stop.get('eta', ''),
+                                    status='sent_to_driver'
                                 )
                                 if success:
                                     update_count += 1
@@ -436,7 +437,8 @@ if st.session_state.optimized_routes:
                                     driver_name=driver_name,
                                     route_id=route_id,
                                     stop_number=str(stop.get('stop_number', '')),
-                                    eta=stop.get('eta', '')
+                                    eta=stop.get('eta', ''),
+                                    status='sent_to_driver'
                                 )
                                 if success:
                                     update_count += 1

@@ -83,10 +83,12 @@ with tab1:
                         with col1:
                             st.metric("Total Routes", len(df))
                         with col2:
-                            total_stops = df['total_stops'].sum() if 'total_stops' in df.columns else 0
+                            # Safely sum total_stops, forcing to numeric
+                            total_stops = pd.to_numeric(df['total_stops'], errors='coerce').sum() if 'total_stops' in df.columns else 0
                             st.metric("Total Stops", int(total_stops))
                         with col3:
-                            total_miles = df['total_distance_miles'].sum() if 'total_distance_miles' in df.columns else 0
+                            # Safely sum distance, forcing to numeric
+                            total_miles = pd.to_numeric(df['total_distance_miles'], errors='coerce').sum() if 'total_distance_miles' in df.columns else 0
                             st.metric("Total Miles", f"{total_miles:.1f}")
                         with col4:
                             unique_drivers = df['driver_name'].nunique() if 'driver_name' in df.columns else 0
