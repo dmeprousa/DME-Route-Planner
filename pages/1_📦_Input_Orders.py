@@ -69,7 +69,8 @@ if 'orders' not in st.session_state:
     if current_user:
         today_str = today.strftime('%Y-%m-%d')
         # Load from the new unified source of truth
-        st.session_state.orders = db.get_orders(date=today_str)
+        orders = db.get_orders(date=today_str)
+        st.session_state.orders = orders if orders is not None else []
     else:
         st.session_state.orders = []
 
@@ -528,12 +529,18 @@ if st.session_state.orders:
                         st.info(f"Deleting indices: {st.session_state.pending_delete_indices}")
                         st.info(f"Current order count: {len(st.session_state.orders)}")
                         
-                        # Remove selected orders (reverse order to avoid index shift issues)
-                        deleted_orders = []
+                        # Prepare deletion list for confirmation
+                        names_to_delete = []
                         for index in sorted(st.session_state.pending_delete_indices, reverse=True):
                             if index < len(st.session_state.orders):
-                                deleted_order = st.session_state.orders[index]
-                                deleted_orders.append(deleted_order.get('customer_name', 'Unknown'))
+                                names_to_delete.append(st.session_state.orders[index].get('customer_name', 'Unknown'))
+                        
+                        st.warning(f"⚠️ You are about to delete {len(names_to_delete)} orders:")
+                        st.info(", ".join(names_to_delete))
+                        
+                        # Remove selected orders
+                        for index in sorted(st.session_state.pending_delete_indices, reverse=True):
+                            if index < len(st.session_state.orders):
                                 del st.session_state.orders[index]
                         
                         # Sync to Google Sheets after deletion

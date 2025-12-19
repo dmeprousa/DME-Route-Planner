@@ -49,9 +49,8 @@ try:
     db = Database()
     today_date = date.today().strftime('%Y-%m-%d')
     orders = db.get_orders(date=today_date)
-    if orders:
-        # Use database as source of truth
-        st.session_state.orders = orders
+    # Use database as source of truth (handle empty list correctly)
+    st.session_state.orders = orders if orders is not None else []
 except Exception as e:
     st.warning(f"Note: Using session data (Offline). Sync error: {str(e)}")
 
@@ -64,9 +63,9 @@ st.subheader(f"📅 {today}")
 # --- METRICS SECTION ---
 # Calculate stats from session state orders
 total_orders = len(st.session_state.orders)
-# Status keys are case-insensitive and must match database
+# Status keys are case-insensitive and match database
 pending = sum(1 for o in st.session_state.orders if str(o.get('status', 'pending')).lower() == 'pending')
-sent = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() in ['sent_requested', 'sent_to_driver'])
+sent = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() in ['sent_requested', 'sent_to_driver', 'sent'])
 delivered = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() == 'delivered')
 failed = sum(1 for o in st.session_state.orders if str(o.get('status', '')).lower() == 'failed')
 

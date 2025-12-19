@@ -148,31 +148,29 @@ class Database:
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
             
-            # IMPORTANT: Delete existing rows for this date first to avoid duplicates
+            # Find rows with matching date (Column B, index 1)
             all_values = ws.get_all_values()
-            if len(all_values) > 1:  # Has header + data
-                # Find rows with matching date (date is in column B, index 1)
+            if len(all_values) > 1:
                 rows_to_delete = []
-                for idx, row in enumerate(all_values[1:], start=2):  # Start from row 2 (skip header)
-                    if len(row) > 1 and row[1] == date:  # Column B is date
+                for idx, row in enumerate(all_values[1:], start=2):
+                    if len(row) > 1 and row[1] == date:
                         rows_to_delete.append(idx)
                 
-                # Delete in reverse order to avoid index shifting
+                # Delete in reverse order
                 for row_idx in reversed(rows_to_delete):
                     ws.delete_rows(row_idx)
             
-            # Now append new orders
+            # Prepare rows for bulk append
+            rows_to_append = []
             for i, order in enumerate(orders):
-                order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
+                order_id = order.get('order_id') or order.get('order_id_1')
+                if not order_id:
+                    order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
                 
-
-                # Clean items list for sheet readability
+                # Map fields robustly
                 raw_items = order.get('items', '')
-                if isinstance(raw_items, list):
-                    clean_items = " | ".join(raw_items)
-                else:
-                    clean_items = str(raw_items).replace(',', ' | ')
-
+                clean_items = " | ".join(raw_items) if isinstance(raw_items, list) else str(raw_items).replace(',', ' | ')
+                
                 row = [
                     order_id,
                     date,
@@ -185,8 +183,8 @@ class Database:
                     order.get('city', ''),
                     order.get('zip_code', ''),
                     clean_items,
-                    order.get('time_window_start', ''),
-                    order.get('time_window_end', ''),
+                    order.get('time_window_start', '') or order.get('time_start', ''),
+                    order.get('time_window_end', '') or order.get('time_end', ''),
                     order.get('special_notes', ''),
                     order.get('assigned_driver', ''),
                     order.get('route_id', ''),
@@ -194,13 +192,14 @@ class Database:
                     order.get('eta', ''),
                     order.get('eta', ''),
                     datetime.now().isoformat(),
-                    # Add coordinates if available
-                    order.get('coordinates', {}).get('lat', ''),
-                    order.get('coordinates', {}).get('lng', ''),
+                    order.get('coordinates', {}).get('lat', '') if isinstance(order.get('coordinates'), dict) else '',
+                    order.get('coordinates', {}).get('lng', '') if isinstance(order.get('coordinates'), dict) else '',
                     order.get('parsed_at', '')
                 ]
-                
-                ws.append_row(row)
+                rows_to_append.append(row)
+            
+            if rows_to_append:
+                ws.append_rows(rows_to_append)
                 
         except Exception as e:
             raise Exception(f"Error saving orders: {str(e)}")

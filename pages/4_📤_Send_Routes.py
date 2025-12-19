@@ -114,27 +114,44 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
                         
                         # Match stops to order_ids in session state
                         for stop in stops:
-                            stop_addr = stop.get('address', '').lower().strip()
-                            stop_cust = stop.get('customer_name', '').lower().strip()
+                            stop_order_id = stop.get('order_id')
+                            matched_order_id = None
                             
-                            # Find matching order in session
-                            for order in all_orders:
-                                order_addr = order.get('address', '').lower().strip()
-                                order_cust = order.get('customer_name', '').lower().strip()
-                                
-                                # Match by address AND customer for reliability
-                                if (stop_addr in order_addr or order_addr in stop_addr) and \
-                                   (stop_cust in order_cust or order_cust in stop_cust):
-                                    
-                                    order_id = order.get('order_id')
-                                    if order_id:
-                                        # Update Database
-                                        db.update_order_status(order_id, 'sent_to_driver')
-                                        # Update Local Session State
-                                        order['status'] = 'sent_to_driver'
+                            # 1. Try to match by order_id directly (Best)
+                            if stop_order_id and stop_order_id != "MANUAL":
+                                for order in all_orders:
+                                    if order.get('order_id') == stop_order_id:
+                                        matched_order_id = stop_order_id
+                                        order['status'] = 'sent_to_driver' # Update local
                                         order['assigned_driver'] = driver_name
-                                        updated_count += 1
                                         break
+                                        
+                            # 2. Fallback to Address + Customer matching
+                            if not matched_order_id:
+                                stop_addr = stop.get('address', '').lower().strip()
+                                stop_cust = stop.get('customer_name', '').lower().strip()
+                                
+                                # Find matching order in session
+                                for order in all_orders:
+                                    order_addr = order.get('address', '').lower().strip()
+                                    order_cust = order.get('customer_name', '').lower().strip()
+                                    
+                                    # Match by address OR customer with high similarity
+                                    if (stop_addr in order_addr or order_addr in stop_addr) and \
+                                       (stop_cust in order_cust or order_cust in stop_cust):
+                                        
+                                        matched_order_id = order.get('order_id')
+                                        if matched_order_id:
+                                            # Update Local Session State
+                                            order['status'] = 'sent_to_driver'
+                                            order['assigned_driver'] = driver_name
+                                            break
+                            
+                            # 3. Update Database if match found
+                            if matched_order_id:
+                                db.update_order_status(matched_order_id, 'sent_to_driver')
+                                updated_count += 1
+
                         
                         if updated_count > 0:
                             st.success(f"✅ Updated {updated_count} orders to 'Sent to Driver' status!")
