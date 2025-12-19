@@ -167,6 +167,10 @@ class Database:
                 if not order_id:
                     order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
                 
+                # CRITICAL FIX: Save the generated order_id back to the order dictionary
+                # This ensures orders in session state have valid IDs for deletion
+                order['order_id'] = order_id
+                
                 # Map fields robustly
                 raw_items = order.get('items', '')
                 clean_items = " | ".join(raw_items) if isinstance(raw_items, list) else str(raw_items).replace(',', ' | ')

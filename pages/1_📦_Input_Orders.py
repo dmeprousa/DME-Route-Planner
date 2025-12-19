@@ -523,10 +523,21 @@ if st.session_state.orders:
                 for idx in selected_indices:
                     if idx < len(st.session_state.orders):
                         order_id = st.session_state.orders[idx].get('order_id')
-                        if order_id:
-                            order_ids_to_delete.append(order_id)
+                        
+                        # FALLBACK: If no order_id, generate a temporary unique identifier
+                        # This can happen if orders were just added and not yet saved
+                        if not order_id:
+                            # Use customer_name + address as unique identifier
+                            customer = st.session_state.orders[idx].get('customer_name', '')
+                            address = st.session_state.orders[idx].get('address', '')
+                            order_id = f"TEMP_{idx}_{customer}_{address}"
+                            # Update the order with this ID
+                            st.session_state.orders[idx]['order_id'] = order_id
+                        
+                        order_ids_to_delete.append(order_id)
                 
                 st.session_state.pending_delete_order_ids = order_ids_to_delete
+                st.info(f"DEBUG: Preparing to delete {len(order_ids_to_delete)} orders: {order_ids_to_delete}")
                 st.rerun()
                 
             if st.session_state.confirming_delete:
