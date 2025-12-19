@@ -144,16 +144,22 @@ class Database:
             raise Exception(f"Error adding driver: {str(e)}")
     
     def save_orders(self, orders: List[Dict], date: str) -> None:
-        """Save orders to ORDERS sheet - replaces existing orders for this date"""
+        """Save orders to ORDERS sheet - replaces existing orders for this date (SAFE MODE)"""
         import streamlit as st # For debugging
+        backup_rows = []
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
             
             # Find rows with matching date (Column B, index 1)
             all_values = ws.get_all_values()
             
+            # 1. Create a BACKUP of the current state before touching anything
+            if len(all_values) > 1 and date in [r[1] for r in all_values[1:] if len(r)>1]:
+                # st.write("🛡️ Creating safety backup...")
+                backup_rows = [r for r in all_values if len(r) > 1 and r[1] == date]
+
             # DEBUG
-            st.write(f"📊 Found {len(all_values)} total rows in sheet")
+            st.write(f"📊 Found {len(all_values)} total rows. Processing for date: {date}")
             
             if len(all_values) > 1:
                 rows_to_delete = []
@@ -163,7 +169,7 @@ class Database:
                 
                 # Delete in reverse order
                 if rows_to_delete:
-                    st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows for date {date}...")
+                    st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows...")
                     for row_idx in reversed(rows_to_delete):
                         ws.delete_rows(row_idx)
             
@@ -183,6 +189,10 @@ class Database:
                 raw_items = order.get('items', '')
                 clean_items = " | ".join(raw_items) if isinstance(raw_items, list) else str(raw_items).replace(',', ' | ')
                 
+                # Ensure coordinates are handled safely
+                coords = order.get('coordinates', {})
+                if not isinstance(coords, dict): coords = {}
+
                 row = [
                     order_id,
                     date,
@@ -204,8 +214,8 @@ class Database:
                     order.get('eta', ''),
                     order.get('eta', ''),
                     datetime.now().isoformat(),
-                    order.get('coordinates', {}).get('lat', '') if isinstance(order.get('coordinates'), dict) else '',
-                    order.get('coordinates', {}).get('lng', '') if isinstance(order.get('coordinates'), dict) else '',
+                    coords.get('lat', ''),
+                    coords.get('lng', ''),
                     order.get('parsed_at', '')
                 ]
                 rows_to_append.append(row)
@@ -214,9 +224,21 @@ class Database:
                 st.write(f"💾 Appending {len(rows_to_append)} new rows...")
                 ws.append_rows(rows_to_append)
                 st.success("✅ Database updated successfully")
+            elif not rows_to_append and backup_rows:
+                st.warning("⚠️ Warning: Saving 0 orders (Cleared database for this date).")
                 
         except Exception as e:
             st.error(f"❌ DATABASE ERROR: {str(e)}")
+            
+            # ATTEMPT RESTORE
+            if backup_rows:
+                st.warning("⚠️ Attempting to restore original data due to error...")
+                try:
+                    ws.append_rows(backup_rows)
+                    st.success("✅ RESTORED original data data safely.")
+                except Exception as restore_error:
+                    st.error(f"❌ FATAL: Restore also failed: {str(restore_error)}")
+            
             raise Exception(f"Error saving orders: {str(e)}")
     
     def save_routes(self, routes: Dict, date: str) -> None:

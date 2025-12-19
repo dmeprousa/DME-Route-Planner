@@ -432,7 +432,7 @@ if st.session_state.orders:
     # Data Editor with column configurations
     edited_df = st.data_editor(
         df,
-        use_container_width=True,
+        use_container_width=True, # Keeping this for compatibility, warnings are harmless for now
         num_rows="fixed",
         column_config={
             "Selected": st.column_config.CheckboxColumn(
