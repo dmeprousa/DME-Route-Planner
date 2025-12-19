@@ -13,7 +13,6 @@ from datetime import date
 from components.order_input import OrderInput
 from components.user_session import UserSession
 from utils.validators import validate_order
-from utils.sheets_manager import SheetsManager
 import pandas as pd
 
 st.set_page_config(page_title="Input Orders", page_icon="📦", layout="wide")
@@ -25,8 +24,9 @@ st.title("📦 Input Orders")
 today = date.today()
 st.caption(f"Add delivery/pickup orders for **{today.strftime('%A, %B %d, %Y')}**")
 
-# Initialize Sheets Manager
-sheets = SheetsManager()
+# Initialize Database Manager
+from components.database import Database
+db = Database()
 
 # Date-based session management
 if 'current_date' not in st.session_state:
@@ -64,14 +64,12 @@ if st.session_state.current_date < today:
 
 # Initialize session state and load from Google Sheets
 if 'orders' not in st.session_state:
-    # Load pending orders for TODAY only
+    # Load pending orders for TODAY only from the main ORDERS sheet
     current_user = UserSession.get_current_user()
-    if current_user and sheets.spreadsheet:
-        pending = sheets.load_pending_orders(current_user)
-        # Filter only today's orders
+    if current_user:
         today_str = today.strftime('%Y-%m-%d')
-        today_orders = [o for o in pending if o.get('date', today_str) == today_str]
-        st.session_state.orders = today_orders
+        # Load from the new unified source of truth
+        st.session_state.orders = db.get_orders(date=today_str)
     else:
         st.session_state.orders = []
 
@@ -136,15 +134,13 @@ if selected_method == "📝 Paste Text":
                         
                         if added > 0:
                             st.success(f"✅ Added {added} orders!")
-                            # Save to Google Sheets
-                            current_user = UserSession.get_current_user()
-                            if current_user and sheets.spreadsheet:
-                                if sheets.save_pending_orders(st.session_state.orders, current_user):
-                                    st.success("☁️ Synced to Google Sheets!")
-                                else:
-                                    st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
-                            elif not sheets.spreadsheet:
-                                st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
+                            # Save to Google Sheets (Unified ORDERS Tab)
+                            date_str = today.strftime('%Y-%m-%d')
+                            try:
+                                db.save_orders(st.session_state.orders, date_str)
+                                st.success("☁️ Synced to Google Sheets!")
+                            except Exception as e:
+                                st.warning(f"⚠️ Sync failed: {str(e)}")
                         if errors:
                             for error in errors:
                                 st.warning(error)
@@ -208,15 +204,13 @@ elif selected_method == "📄 Upload File":
                 
                 if added > 0:
                     st.success(f"✅ Added {added} orders!")
-                    # Save to Google Sheets
-                    current_user = UserSession.get_current_user()
-                    if current_user and sheets.spreadsheet:
-                        if sheets.save_pending_orders(st.session_state.orders, current_user):
-                            st.success("☁️ Synced to Google Sheets!")
-                        else:
-                            st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
-                    elif not sheets.spreadsheet:
-                        st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
+                    # Save to Google Sheets (Unified ORDERS Tab)
+                    date_str = today.strftime('%Y-%m-%d')
+                    try:
+                        db.save_orders(st.session_state.orders, date_str)
+                        st.success("☁️ Synced to Google Sheets!")
+                    except Exception as e:
+                        st.warning(f"⚠️ Sync failed: {str(e)}")
                 if errors:
                     with st.expander("⚠️ Validation Errors"):
                         for error in errors:
@@ -275,15 +269,13 @@ elif selected_method == "📸 Upload Image":
                         
                         if added > 0:
                             st.success(f"✅ Extracted {added} orders from image!")
-                            # Save to Google Sheets
-                            current_user = UserSession.get_current_user()
-                            if current_user and sheets.spreadsheet:
-                                if sheets.save_pending_orders(st.session_state.orders, current_user):
-                                    st.success("☁️ Synced to Google Sheets!")
-                                else:
-                                    st.warning("⚠️ Failed to sync with Google Sheets. Orders saved locally only.")
-                            elif not sheets.spreadsheet:
-                                st.warning("⚠️ Google Sheets not connected. Orders saved locally only.")
+                            # Save to Google Sheets (Unified ORDERS Tab)
+                            date_str = today.strftime('%Y-%m-%d')
+                            try:
+                                db.save_orders(st.session_state.orders, date_str)
+                                st.success("☁️ Synced to Google Sheets!")
+                            except Exception as e:
+                                st.warning(f"⚠️ Sync failed: {str(e)}")
                             st.balloons()
                             st.rerun()
                         
@@ -344,19 +336,14 @@ elif selected_method == "✍️ Manual Entry":
                 order['status'] = 'pending'
                 st.session_state.orders.append(order)
                 
-                # Save to Google Sheets
-                current_user = UserSession.get_current_user()
-                if current_user and sheets.spreadsheet:
-                    with st.spinner("Saving..."):
-                        if sheets.save_pending_orders(st.session_state.orders, current_user):
-                            st.success("✅ Order added and synced!")
-                        else:
-                            st.success("✅ Order added!")
-                            st.warning("⚠️ Failed to sync with Google Sheets.")
-                else:
+                # Save to Google Sheets (Unified ORDERS Tab)
+                date_str = today.strftime('%Y-%m-%d')
+                try:
+                    db.save_orders(st.session_state.orders, date_str)
+                    st.success("✅ Order added and synced!")
+                except Exception as e:
                     st.success("✅ Order added!")
-                    if not sheets.spreadsheet:
-                        st.warning("⚠️ Google Sheets not connected. Saved locally only.")
+                    st.warning(f"⚠️ Failed to sync: {str(e)}")
                 st.rerun()
             else:
                 st.error(f"❌ Validation failed: {msg}")
@@ -549,16 +536,12 @@ if st.session_state.orders:
                                 deleted_orders.append(deleted_order.get('customer_name', 'Unknown'))
                                 del st.session_state.orders[index]
                         
-                        st.info(f"Deleted: {deleted_orders}")
-                        st.info(f"Remaining orders: {len(st.session_state.orders)}")
-                        
                         # Sync to Google Sheets after deletion
                         try:
                             from components.database import Database
                             db = Database()
                             date_str = today.strftime('%Y-%m-%d')
                             
-                            st.info(f"Saving {len(st.session_state.orders)} orders to database...")
                             db.save_orders(st.session_state.orders, date_str)
                             
                             # Delete session cache to prevent auto-restore
@@ -567,11 +550,9 @@ if st.session_state.orders:
                                 cache_file = f".session_cache_{current_user}.json"
                                 if os.path.exists(cache_file):
                                     os.remove(cache_file)
-                                    st.info("Cache deleted")
                             
-                            # Force reload from ORDERS sheet (not PENDING_ORDERS!)
+                            # Force reload from ORDERS sheet
                             fresh_orders = db.get_orders(date=date_str, status=None)  # Get all statuses
-                            st.info(f"Reloaded {len(fresh_orders) if fresh_orders else 0} orders from database")
                             st.session_state.orders = fresh_orders if fresh_orders else []
                             
                             st.toast("✅ Orders deleted and synced to database!", icon="☁️")
@@ -582,10 +563,9 @@ if st.session_state.orders:
                         
                         st.session_state.confirming_delete = False  # Reset
                         st.session_state.pending_delete_indices = []  # Clear
-                        st.success(f"🗑️ Deleted {delete_count} orders.")
                         
-                        # Wait for user to see debug info
-                        st.button("Click to Refresh", type="primary")
+                        # CRITICAL: Rerun to refresh table indices and avoid IndexError
+                        st.rerun()
                 with col_conf2:
                     if st.button("❌ Cancel", key="btn_cancel_del"):
                         st.session_state.confirming_delete = False

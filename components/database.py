@@ -253,44 +253,46 @@ class Database:
             ws = self.spreadsheet.worksheet('ORDERS')
             
             # Use get_all_values to handle duplicate/empty headers manually
-            # get_all_records() fails if there are empty or duplicate header cols
             all_values = ws.get_all_values()
             
             if not all_values:
                 return []
                 
-            headers = all_values[0]
+            raw_headers = all_values[0]
             rows = all_values[1:]
             
-            # Create unique headers for mapping
-            unique_headers = []
+            # Create normalized headers for mapping (snake_case)
+            # This handles 'Date' -> 'date', 'Order Type' -> 'order_type'
+            headers = []
             seen_count = {}
-            for h in headers:
-                key = str(h).strip()
+            for h in raw_headers:
+                # Normalize: lowercase, strip, replace spaces with underscores
+                key = str(h).strip().lower().replace(' ', '_')
                 if not key:
-                    key = "Unknown"
+                    key = "unknown"
                 
                 if key in seen_count:
                     seen_count[key] += 1
                     key = f"{key}_{seen_count[key]}"
                 else:
                     seen_count[key] = 0
-                unique_headers.append(key)
+                headers.append(key)
             
             records = []
             for row in rows:
                 # Ensure row is same length as headers
-                if len(row) < len(unique_headers):
-                    row = row + [''] * (len(unique_headers) - len(row))
-                elif len(row) > len(unique_headers):
-                    row = row[:len(unique_headers)]
+                if len(row) < len(headers):
+                    row = row + [''] * (len(headers) - len(row))
+                elif len(row) > len(headers):
+                    row = row[:len(headers)]
                     
-                records.append(dict(zip(unique_headers, row)))
+                records.append(dict(zip(headers, row)))
             
+            # Filter results - Using normalized keys
             if date:
                 records = [r for r in records if r.get('date') == date]
             if status:
-                records = [r for r in records if r.get('status', '').lower() == status.lower()]
+                records = [r for r in records if str(r.get('status', '')).lower() == status.lower()]
             
             return records
             
