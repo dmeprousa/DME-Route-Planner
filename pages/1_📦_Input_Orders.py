@@ -128,6 +128,11 @@ if selected_method == "📝 Paste Text":
                                 from datetime import datetime
                                 order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                                 order['status'] = 'pending'
+                                
+                                # CRITICAL: Generate order_id immediately!
+                                import time
+                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                                
                                 st.session_state.orders.append(order)
                                 added += 1
                             else:
@@ -194,6 +199,11 @@ elif selected_method == "📄 Upload File":
                         from datetime import datetime
                         order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         order['status'] = 'pending'
+                        
+                        # CRITICAL: Generate order_id immediately!
+                        import time
+                        order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                        
                         st.session_state.orders.append(order)
                         added += 1
                     else:
@@ -261,6 +271,11 @@ elif selected_method == "📸 Upload Image":
                                 from datetime import datetime
                                 order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                                 order['status'] = 'pending'
+                                
+                                # CRITICAL: Generate order_id immediately!
+                                import time
+                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                                
                                 st.session_state.orders.append(order)
                                 added += 1
                             else:
@@ -335,6 +350,11 @@ elif selected_method == "✍️ Manual Entry":
                 from datetime import datetime
                 order['parsed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 order['status'] = 'pending'
+                
+                # CRITICAL: Generate order_id immediately!
+                import time
+                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                
                 st.session_state.orders.append(order)
                 
                 # Save to Google Sheets (Unified ORDERS Tab)
@@ -517,27 +537,23 @@ if st.session_state.orders:
                 
             if st.button(f"🗑️ Delete Selected ({count})", use_container_width=True):
                 st.session_state.confirming_delete = True
-                # CRITICAL FIX: Store order_ids instead of indices
-                # Indices can change during rerun, but order_id is permanent
+                # Extract order_ids from selected orders
                 order_ids_to_delete = []
                 for idx in selected_indices:
                     if idx < len(st.session_state.orders):
                         order_id = st.session_state.orders[idx].get('order_id')
+                        customer_name = st.session_state.orders[idx].get('customer_name', 'Unknown')
                         
-                        # FALLBACK: If no order_id, generate a temporary unique identifier
-                        # This can happen if orders were just added and not yet saved
-                        if not order_id:
-                            # Use customer_name + address as unique identifier
-                            customer = st.session_state.orders[idx].get('customer_name', '')
-                            address = st.session_state.orders[idx].get('address', '')
-                            order_id = f"TEMP_{idx}_{customer}_{address}"
-                            # Update the order with this ID
-                            st.session_state.orders[idx]['order_id'] = order_id
-                        
-                        order_ids_to_delete.append(order_id)
+                        if order_id:
+                            order_ids_to_delete.append(order_id)
+                        else:
+                            st.error(f"⚠️ Order '{customer_name}' at index {idx} has NO order_id!")
                 
                 st.session_state.pending_delete_order_ids = order_ids_to_delete
-                st.info(f"DEBUG: Preparing to delete {len(order_ids_to_delete)} orders: {order_ids_to_delete}")
+                
+                # DEBUG INFO
+                st.info(f"🔍 DEBUG: Selected {len(order_ids_to_delete)} orders for deletion")
+                st.code(f"IDs: {order_ids_to_delete}")
                 st.rerun()
                 
             if st.session_state.confirming_delete:
@@ -547,25 +563,35 @@ if st.session_state.orders:
                 with col_conf1:
                     if st.button("✅ Yes, Delete", type="primary", key="btn_confirm_del"):
                         # Show debug info
-                        st.info(f"Deleting order IDs: {st.session_state.pending_delete_order_ids}")
-                        st.info(f"Current order count: {len(st.session_state.orders)}")
+                        st.info(f"🔍 Order IDs to DELETE: {st.session_state.pending_delete_order_ids}")
+                        st.info(f"📦 Current total orders: {len(st.session_state.orders)}")
+                        
+                        # Show all current order IDs
+                        all_order_ids = [o.get('order_id', 'NO_ID') for o in st.session_state.orders]
+                        st.code(f"All Order IDs in session:\n{all_order_ids}")
                         
                         # Prepare deletion list for confirmation
                         names_to_delete = []
                         orders_to_keep = []
                         
                         # CRITICAL FIX: Delete by order_id, not by index
-                        for order in st.session_state.orders:
+                        for i, order in enumerate(st.session_state.orders):
                             order_id = order.get('order_id')
+                            customer_name = order.get('customer_name', 'Unknown')
+                            
                             if order_id in st.session_state.pending_delete_order_ids:
                                 # This order should be deleted
-                                names_to_delete.append(order.get('customer_name', 'Unknown'))
+                                names_to_delete.append(customer_name)
+                                st.warning(f"❌ DELETING: {customer_name} (ID: {order_id})")
                             else:
                                 # This order should be kept
                                 orders_to_keep.append(order)
+                                st.success(f"✅ KEEPING: {customer_name} (ID: {order_id})")
                         
-                        st.warning(f"⚠️ Deleting {len(names_to_delete)} orders:")
+                        st.warning(f"⚠️ Will delete {len(names_to_delete)} orders:")
                         st.info(", ".join(names_to_delete))
+                        
+                        st.success(f"✅ Will keep {len(orders_to_keep)} orders")
                         
                         # Update session state with remaining orders
                         st.session_state.orders = orders_to_keep
