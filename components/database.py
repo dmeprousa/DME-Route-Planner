@@ -144,59 +144,62 @@ class Database:
             raise Exception(f"Error adding driver: {str(e)}")
     
     def save_orders(self, orders: List[Dict], date: str) -> None:
-        """Save orders to ORDERS sheet - replaces existing orders for this date (SAFE MODE)"""
+        """Save orders to ORDERS sheet - replaces existing orders for this date (Optimized & Safe)"""
         import streamlit as st # For debugging
-        backup_rows = []
+        
         try:
             ws = self.spreadsheet.worksheet('ORDERS')
             
-            # Find rows with matching date (Column B, index 1)
+            # 1. READ ALL DATA (One API Call)
             all_values = ws.get_all_values()
             
-            # 1. Create a BACKUP of the current state before touching anything
-            if len(all_values) > 1 and date in [r[1] for r in all_values[1:] if len(r)>1]:
-                # st.write("🛡️ Creating safety backup...")
-                backup_rows = [r for r in all_values if len(r) > 1 and r[1] == date]
-
-            # DEBUG
-            st.write(f"📊 Found {len(all_values)} total rows. Processing for date: {date}")
-            
-            if len(all_values) > 1:
-                rows_to_delete = []
-                for idx, row in enumerate(all_values[1:], start=2):
-                    if len(row) > 1 and row[1] == date:
-                        rows_to_delete.append(idx)
+            if not all_values:
+                # Initialize headers if empty
+                headers = [
+                    "order_id", "date", "created_at", "status", "order_type", 
+                    "customer_name", "customer_phone", "address", "city", "zip_code", 
+                    "items", "time_window_start", "time_window_end", "special_notes", 
+                    "assigned_driver", "route_id", "stop_number", "eta", 
+                    "updated_at", "lat", "lng", "parsed_at"
+                ]
+                final_rows = [headers]
+            else:
+                headers = all_values[0]
+                # Filter OUT rows for the target date (Keep everything else)
+                # We assume date is in column index 1 (B)
+                final_rows = [all_values[0]] # Keep headers
                 
-                # Delete in reverse order
-                if rows_to_delete:
-                    st.write(f"🗑️ Deleting {len(rows_to_delete)} old rows...")
-                    for row_idx in reversed(rows_to_delete):
-                        ws.delete_rows(row_idx)
+                # Careful with date matching
+                for row in all_values[1:]:
+                    if len(row) > 1:
+                        if row[1] != date:
+                            final_rows.append(row)
+                    else:
+                        final_rows.append(row) # Keep malformed/empty rows to preserve structure? Or skip? Skip is safer.
             
-            # Prepare rows for bulk append
-            rows_to_append = []
+            # 2. PREPARE NEW ROWS
+            new_rows = []
             for i, order in enumerate(orders):
                 order_id = order.get('order_id') or order.get('order_id_1')
                 if not order_id:
                     import uuid
                     order_id = f"ORD-{date.replace('-', '')}-{str(uuid.uuid4())[:8].upper()}"
                 
-                # CRITICAL FIX: Save the generated order_id back to the order dictionary
-                # This ensures orders in session state have valid IDs for deletion
+                # Update order object with ID
                 order['order_id'] = order_id
                 
-                # Map fields robustly
+                # Format Items
                 raw_items = order.get('items', '')
                 clean_items = " | ".join(raw_items) if isinstance(raw_items, list) else str(raw_items).replace(',', ' | ')
                 
-                # Ensure coordinates are handled safely
+                # Coordinates
                 coords = order.get('coordinates', {})
                 if not isinstance(coords, dict): coords = {}
 
                 row = [
                     order_id,
                     date,
-                    datetime.now().isoformat(),
+                    order.get('created_at', datetime.now().isoformat()),
                     order.get('status', 'pending'),
                     order.get('order_type', ''),
                     order.get('customer_name', ''),
@@ -208,37 +211,30 @@ class Database:
                     order.get('time_window_start', '') or order.get('time_start', ''),
                     order.get('time_window_end', '') or order.get('time_end', ''),
                     order.get('special_notes', ''),
-                    order.get('assigned_driver', ''),
+                    order.get('assigned_driver', ''), # Ensure driver maps correctly
                     order.get('route_id', ''),
                     order.get('stop_number', ''),
                     order.get('eta', ''),
-                    order.get('eta', ''),
-                    datetime.now().isoformat(),
+                    datetime.now().isoformat(), # updated_at
                     coords.get('lat', ''),
                     coords.get('lng', ''),
                     order.get('parsed_at', '')
                 ]
-                rows_to_append.append(row)
+                new_rows.append(row)
             
-            if rows_to_append:
-                st.write(f"💾 Appending {len(rows_to_append)} new rows...")
-                ws.append_rows(rows_to_append)
-                st.success("✅ Database updated successfully")
-            elif not rows_to_append and backup_rows:
-                st.warning("⚠️ Warning: Saving 0 orders (Cleared database for this date).")
+            # Combine kept rows + new rows
+            final_rows.extend(new_rows)
+            
+            # 3. WRITE BACK (Atomic-ish Update)
+            # clear() then update() is two calls. update(range, values) is one call if range is big enough.
+            # Best safest way: clear then update.
+            ws.clear()
+            ws.update(final_rows) 
+            
+            st.success(f"✅ Database updated! ({len(new_rows)} orders for {date})")
                 
         except Exception as e:
             st.error(f"❌ DATABASE ERROR: {str(e)}")
-            
-            # ATTEMPT RESTORE
-            if backup_rows:
-                st.warning("⚠️ Attempting to restore original data due to error...")
-                try:
-                    ws.append_rows(backup_rows)
-                    st.success("✅ RESTORED original data data safely.")
-                except Exception as restore_error:
-                    st.error(f"❌ FATAL: Restore also failed: {str(restore_error)}")
-            
             raise Exception(f"Error saving orders: {str(e)}")
     
     def save_routes(self, routes: Dict, date: str) -> None:

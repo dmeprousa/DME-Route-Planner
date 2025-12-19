@@ -495,26 +495,48 @@ if st.session_state.orders:
     # Actions Bar
     
     # Sync status changes back to session state
-    # Identify differneces and update
+    # Sync status changes back to session state securely
+    orders_changed = False
+    
+    # Create a lookup map for faster access
+    order_map = {o.get('order_id'): o for o in st.session_state.orders if o.get('order_id')}
+    
     for index, row in edited_df.iterrows():
-        if index < len(st.session_state.orders):
-            if st.session_state.orders[index].get('status') != row['status']:
-                st.session_state.orders[index]['status'] = row['status']
+        order_id = row.get('order_id')
+        if order_id and order_id in order_map:
+            order = order_map[order_id]
             
-            # Sync assigned driver manual changes
-            if st.session_state.orders[index].get('assigned_driver') != row['assigned_driver']:
-                 st.session_state.orders[index]['assigned_driver'] = row['assigned_driver']
-                 
-                 # Auto-update status if driver is assigned
-                 driver_val = row['assigned_driver']
-                 if driver_val and driver_val not in ["Unassigned", "None", ""]:
-                     st.session_state.orders[index]['status'] = 'sent_to_driver'
-                     st.rerun()
+            # 1. Sync Status
+            if order.get('status') != row['status']:
+                order['status'] = row['status']
+                orders_changed = True
+            
+            # 2. Sync Assigned Driver
+            if order.get('assigned_driver') != row['assigned_driver']:
+                order['assigned_driver'] = row['assigned_driver']
+                orders_changed = True
+                
+                # Auto-update status if driver is assigned
+                driver_val = row['assigned_driver']
+                if driver_val and driver_val not in ["Unassigned", "None", ""]:
+                    if order['status'] == 'pending':
+                        order['status'] = 'sent_to_driver'
+    
+    # Auto-save to Cloud if changes detected
+    if orders_changed:
+        try:
+            from components.database import Database
+            db = Database()
+            date_str = today.strftime('%Y-%m-%d')
+            db.save_orders(st.session_state.orders, date_str)
+            st.toast("✅ Changes saved to Cloud!", icon="☁️")
+        except Exception as e:
+            st.error(f"Auto-save failed: {str(e)}")
 
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col3:
-        if st.button("☁️ Cloud Sync", type="primary", use_container_width=True, help="Push orders to Google Sheets System"):
+        if st.button("☁️ Force Sync", type="primary", use_container_width=True, help="Push orders to Google Sheets System"):
             try:
                 from components.database import Database
                 db = Database()
@@ -546,42 +568,32 @@ if st.session_state.orders:
                 st.session_state.confirming_delete = False
             
             # Store selected ORDER IDs (not indices!) in session state for confirmation
-            # This prevents issues with changing indices during rerun
             if 'pending_delete_order_ids' not in st.session_state:
                 st.session_state.pending_delete_order_ids = []
                 
             if st.button(f"🗑️ Delete Selected ({count})", use_container_width=True):
                 st.session_state.confirming_delete = True
-                # Extract order_ids from selected orders
+                
+                # Robust extraction of order_ids directly from DataFrame
+                # valid even if sorted/filtered
                 order_ids_to_delete = []
-                for idx in selected_indices:
-                    if idx < len(st.session_state.orders):
-                        order_id = st.session_state.orders[idx].get('order_id')
-                        customer_name = st.session_state.orders[idx].get('customer_name', 'Unknown')
-                        
-                        if order_id:
-                            order_ids_to_delete.append(order_id)
-                        else:
-                            st.error(f"⚠️ Order '{customer_name}' at index {idx} has NO order_id!")
+                
+                if "order_id" in edited_df.columns:
+                     # Get IDs directly from selected rows
+                     selected_rows = edited_df[edited_df["Selected"] == True]
+                     order_ids_to_delete = selected_rows["order_id"].tolist()
+                else:
+                    # Fallback (should not happen if order_id is in data)
+                    for idx in selected_indices:
+                        if idx < len(st.session_state.orders):
+                            order_id = st.session_state.orders[idx].get('order_id')
+                            if order_id: order_ids_to_delete.append(order_id)
                 
                 st.session_state.pending_delete_order_ids = order_ids_to_delete
-                
-                # DEBUG INFO
-                st.info(f"🔍 DEBUG: Selected {len(order_ids_to_delete)} orders for deletion")
-                st.code(f"IDs: {order_ids_to_delete}")
                 st.rerun()
                 
             if st.session_state.confirming_delete:
                 delete_count = len(st.session_state.pending_delete_order_ids)
-                
-                # DEBUG: Show what we're about to delete
-                st.write("### 🔍 DEBUG INFO (Before Deletion):")
-                st.code(f"pending_delete_order_ids = {st.session_state.pending_delete_order_ids}")
-                
-                # Show all current order IDs for comparison
-                current_ids = [o.get('order_id', 'NONE') for o in st.session_state.orders]
-                st.code(f"Current order IDs in session = {current_ids}")
-                
                 st.warning(f"⚠️ You are about to delete {delete_count} orders. This cannot be undone!")
                 col_conf1, col_conf2 = st.columns(2)
                 with col_conf1:
