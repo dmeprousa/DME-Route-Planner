@@ -573,6 +573,15 @@ if st.session_state.orders:
                 
             if st.session_state.confirming_delete:
                 delete_count = len(st.session_state.pending_delete_order_ids)
+                
+                # DEBUG: Show what we're about to delete
+                st.write("### 🔍 DEBUG INFO (Before Deletion):")
+                st.code(f"pending_delete_order_ids = {st.session_state.pending_delete_order_ids}")
+                
+                # Show all current order IDs for comparison
+                current_ids = [o.get('order_id', 'NONE') for o in st.session_state.orders]
+                st.code(f"Current order IDs in session = {current_ids}")
+                
                 st.warning(f"⚠️ You are about to delete {delete_count} orders. This cannot be undone!")
                 col_conf1, col_conf2 = st.columns(2)
                 with col_conf1:
