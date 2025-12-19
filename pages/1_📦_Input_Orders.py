@@ -525,6 +525,17 @@ if st.session_state.orders:
         selected_indices = edited_df[edited_df["Selected"] == True].index.tolist()
         count = len(selected_indices)
         
+        # DEBUG: Show what we got from DataFrame
+        st.write(f"🔍 **DEBUG:** selected_indices = {selected_indices}")
+        st.write(f"🔍 **DEBUG:** count = {count}")
+        st.write(f"🔍 **DEBUG:** Total orders in session = {len(st.session_state.orders)}")
+        
+        # Show selected column values
+        if 'Selected' in edited_df.columns:
+            selected_values = edited_df['Selected'].tolist()
+            st.write(f"🔍 **DEBUG:** Selected column = {selected_values}")
+            st.write(f"🔍 **DEBUG:** True count = {selected_values.count(True)}")
+        
         if count > 0:
             # Initialize confirm state if not exists
             if 'confirming_delete' not in st.session_state:
