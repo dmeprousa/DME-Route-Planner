@@ -46,9 +46,17 @@ def format_route_message(driver_name: str, route_data: Dict, date: str) -> str:
         full_address = f"{address}, {city}" if city else address
         stop_lines.append(f"Location: {full_address}")
         
-        # Customer if available
-        if stop.get('customer_name'):
-            stop_lines.append(f"Customer: {stop.get('customer_name')}")
+        # Customer info - Name and Phone
+        customer_name = stop.get('customer_name', '')
+        customer_phone = stop.get('customer_phone', '')
+        
+        if customer_name or customer_phone:
+            customer_info = []
+            if customer_name:
+                customer_info.append(customer_name)
+            if customer_phone:
+                customer_info.append(f"📱 {customer_phone}")
+            stop_lines.append(f"Customer: {' - '.join(customer_info)}")
         
         # Items - single line
         stop_lines.append(f"Items: {items_text}")
