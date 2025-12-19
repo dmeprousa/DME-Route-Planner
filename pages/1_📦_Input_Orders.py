@@ -130,8 +130,8 @@ if selected_method == "📝 Paste Text":
                                 order['status'] = 'pending'
                                 
                                 # CRITICAL: Generate order_id immediately!
-                                import time
-                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                                import uuid
+                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
                                 
                                 st.session_state.orders.append(order)
                                 added += 1
@@ -201,8 +201,8 @@ elif selected_method == "📄 Upload File":
                         order['status'] = 'pending'
                         
                         # CRITICAL: Generate order_id immediately!
-                        import time
-                        order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                        import uuid
+                        order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
                         
                         st.session_state.orders.append(order)
                         added += 1
@@ -273,8 +273,8 @@ elif selected_method == "📸 Upload Image":
                                 order['status'] = 'pending'
                                 
                                 # CRITICAL: Generate order_id immediately!
-                                import time
-                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                                import uuid
+                                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
                                 
                                 st.session_state.orders.append(order)
                                 added += 1
@@ -352,8 +352,8 @@ elif selected_method == "✍️ Manual Entry":
                 order['status'] = 'pending'
                 
                 # CRITICAL: Generate order_id immediately!
-                import time
-                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{int(time.time()*1000)%10000:04d}"
+                import uuid
+                order['order_id'] = f"ORD-{today.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
                 
                 st.session_state.orders.append(order)
                 

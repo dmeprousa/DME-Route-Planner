@@ -165,7 +165,8 @@ class Database:
             for i, order in enumerate(orders):
                 order_id = order.get('order_id') or order.get('order_id_1')
                 if not order_id:
-                    order_id = f"ORD-{date.replace('-', '')}-{i+1:03d}"
+                    import uuid
+                    order_id = f"ORD-{date.replace('-', '')}-{str(uuid.uuid4())[:8].upper()}"
                 
                 # CRITICAL FIX: Save the generated order_id back to the order dictionary
                 # This ensures orders in session state have valid IDs for deletion
