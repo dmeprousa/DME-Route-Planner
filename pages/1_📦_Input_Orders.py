@@ -622,6 +622,11 @@ if st.session_state.orders:
                         
                         # Sync to Google Sheets after deletion
                         try:
+                            # DEBUG: Verify what we are saving
+                            st.info(f"💾 Saving {len(st.session_state.orders)} orders to database...")
+                            kept_ids = [o.get('order_id') for o in st.session_state.orders]
+                            st.code(f"IDs being saved: {kept_ids}")
+                            
                             from components.database import Database
                             db = Database()
                             date_str = today.strftime('%Y-%m-%d')
