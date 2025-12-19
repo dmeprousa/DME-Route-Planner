@@ -487,6 +487,10 @@ if st.session_state.orders:
         hide_index=True,
         key="order_editor" 
     )
+    
+    # CRITICAL FIX: Reset index to ensure indices match row positions!
+    # Without this, edited_df might have non-sequential indices which breaks deletion
+    edited_df = edited_df.reset_index(drop=True)
 
     # Actions Bar
     
