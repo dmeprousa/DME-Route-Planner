@@ -510,38 +510,54 @@ if st.session_state.orders:
             if 'confirming_delete' not in st.session_state:
                 st.session_state.confirming_delete = False
             
-            # Store selected indices in session state for confirmation
-            if 'pending_delete_indices' not in st.session_state:
-                st.session_state.pending_delete_indices = []
+            # Store selected ORDER IDs (not indices!) in session state for confirmation
+            # This prevents issues with changing indices during rerun
+            if 'pending_delete_order_ids' not in st.session_state:
+                st.session_state.pending_delete_order_ids = []
                 
             if st.button(f"🗑️ Delete Selected ({count})", use_container_width=True):
                 st.session_state.confirming_delete = True
-                st.session_state.pending_delete_indices = selected_indices  # Save indices
+                # CRITICAL FIX: Store order_ids instead of indices
+                # Indices can change during rerun, but order_id is permanent
+                order_ids_to_delete = []
+                for idx in selected_indices:
+                    if idx < len(st.session_state.orders):
+                        order_id = st.session_state.orders[idx].get('order_id')
+                        if order_id:
+                            order_ids_to_delete.append(order_id)
+                
+                st.session_state.pending_delete_order_ids = order_ids_to_delete
                 st.rerun()
                 
             if st.session_state.confirming_delete:
-                delete_count = len(st.session_state.pending_delete_indices)
+                delete_count = len(st.session_state.pending_delete_order_ids)
                 st.warning(f"⚠️ You are about to delete {delete_count} orders. This cannot be undone!")
                 col_conf1, col_conf2 = st.columns(2)
                 with col_conf1:
                     if st.button("✅ Yes, Delete", type="primary", key="btn_confirm_del"):
                         # Show debug info
-                        st.info(f"Deleting indices: {st.session_state.pending_delete_indices}")
+                        st.info(f"Deleting order IDs: {st.session_state.pending_delete_order_ids}")
                         st.info(f"Current order count: {len(st.session_state.orders)}")
                         
                         # Prepare deletion list for confirmation
                         names_to_delete = []
-                        for index in sorted(st.session_state.pending_delete_indices, reverse=True):
-                            if index < len(st.session_state.orders):
-                                names_to_delete.append(st.session_state.orders[index].get('customer_name', 'Unknown'))
+                        orders_to_keep = []
                         
-                        st.warning(f"⚠️ You are about to delete {len(names_to_delete)} orders:")
+                        # CRITICAL FIX: Delete by order_id, not by index
+                        for order in st.session_state.orders:
+                            order_id = order.get('order_id')
+                            if order_id in st.session_state.pending_delete_order_ids:
+                                # This order should be deleted
+                                names_to_delete.append(order.get('customer_name', 'Unknown'))
+                            else:
+                                # This order should be kept
+                                orders_to_keep.append(order)
+                        
+                        st.warning(f"⚠️ Deleting {len(names_to_delete)} orders:")
                         st.info(", ".join(names_to_delete))
                         
-                        # Remove selected orders
-                        for index in sorted(st.session_state.pending_delete_indices, reverse=True):
-                            if index < len(st.session_state.orders):
-                                del st.session_state.orders[index]
+                        # Update session state with remaining orders
+                        st.session_state.orders = orders_to_keep
                         
                         # Sync to Google Sheets after deletion
                         try:
@@ -569,7 +585,7 @@ if st.session_state.orders:
                             st.code(traceback.format_exc())
                         
                         st.session_state.confirming_delete = False  # Reset
-                        st.session_state.pending_delete_indices = []  # Clear
+                        st.session_state.pending_delete_order_ids = []  # Clear
                         
                         # CRITICAL: Rerun to refresh table indices and avoid IndexError
                         st.rerun()

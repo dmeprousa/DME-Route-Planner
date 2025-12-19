@@ -147,14 +147,18 @@ for driver_name, route_data in st.session_state.optimized_routes.items():
                                             order['assigned_driver'] = driver_name
                                             break
                             
-                            # 3. Update Database if match found
+                            # 3. Count matched orders
                             if matched_order_id:
-                                db.update_order_status(matched_order_id, 'sent_to_driver')
                                 updated_count += 1
 
                         
                         if updated_count > 0:
+                            # CRITICAL FIX: Save ALL orders to database after updating statuses
+                            # This ensures Dashboard shows correct "sent" status
+                            db.save_orders(all_orders, today_str)
+                            
                             st.success(f"✅ Updated {updated_count} orders to 'Sent to Driver' status!")
+                            
                             # Save session state cache
                             from components.user_session import UserSession
                             UserSession._auto_save_session()
