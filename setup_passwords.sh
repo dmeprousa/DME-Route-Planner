@@ -9,7 +9,7 @@ hash_password() {
 }
 
 # Generate hashes
-SOFIA_HASH=$(hash_password "123456Ss")
+SOFIA_HASH=$(hash_password "Sophia122985!")
 CYRUS_HASH=$(hash_password "123456Cc")
 ADMIN_HASH=$(hash_password "1234567Hh")
 
@@ -29,7 +29,7 @@ EOF
 echo "✅ Password hashes added to .env file!"
 echo ""
 echo "📝 Passwords:"
-echo "  - Sofia: 123456Ss"
+echo "  - Sofia: Sophia122985!"
 echo "  - Cyrus: 123456Cc"
 echo "  - Admin: 1234567Hh"
 echo ""
