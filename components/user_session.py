@@ -36,7 +36,7 @@ class UserSession:
         # 0. FAILSAFE: Direct Plaintext Check (The "Just Work" Fix)
         # This bypasses any hashing/environment issues completely.
         DIRECT_PASSWORDS = {
-            'sofia': '123456Ss',
+            'sofia': 'Sophia122985!',
             'cyrus': '123456Cc',
             'admin': '1234567Hh'
         }
@@ -51,7 +51,7 @@ class UserSession:
         
         # 2. Hardcoded Hashes (Secondary Fallback)
         CORRECT_HASHES = {
-            'sofia': 'b231efc738cff097ab77e2a5d475dda69ac9e3ee0d97bebcf4b500406d8d8fa9ffcc',
+            'sofia': '2bef288ca14ecd8669914f107e733754d8507bbd541ed3c1ec42e31500f39073',
             'cyrus': 'a41f28e1b8acc52ae6147822a59381ee6159cc0dc1884f4050f59bb7ba80c74a', 
             'admin': '384d3a536fe70fdfaa5793e6b98a23ad4baaf83e11ee8f3ee18af5088eaebe87'
         }
