@@ -29,7 +29,7 @@ EOF
 echo "✅ Password hashes added to .env file!"
 echo ""
 echo "📝 Passwords:"
-echo "  - Sofia: 123456Ss"
+echo "  - Sofia: Sophia122985!"
 echo "  - Cyrus: 123456Cc"
 echo "  - Admin: 1234567Hh"
 echo ""
