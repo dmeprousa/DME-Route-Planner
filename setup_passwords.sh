@@ -9,7 +9,7 @@ hash_password() {
 }
 
 # Generate hashes
-SOFIA_HASH=$(hash_password "123456Ss")
+SOFIA_HASH=$(hash_password "Sophia122985!")
 CYRUS_HASH=$(hash_password "123456Cc")
 ADMIN_HASH=$(hash_password "1234567Hh")
 
